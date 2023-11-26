@@ -1,0 +1,4 @@
+scp ~/PycharmProjects/SampleFlaskAppOnLinode/main.py root@23.92.21.39:/var/www/flask-apps/SampleFlaskAppOnLinode/.
+scp ~/PycharmProjects/SampleFlaskAppOnLinode/requirements.txt root@23.92.21.39:/var/www/flask-apps/SampleFlaskAppOnLinode/.
+scp ~/PycharmProjects/SampleFlaskAppOnLinode/static/js/script.js root@23.92.21.39:/var/www/flask-apps/SampleFlaskAppOnLinode/static/js/.
+scp ~/PycharmProjects/SampleFlaskAppOnLinode/templates/index.html root@23.92.21.39:/var/www/flask-apps/SampleFlaskAppOnLinode/templates/.
