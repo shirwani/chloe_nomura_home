@@ -20,12 +20,12 @@
   sudo apt update
   sudo apt install nginx -y
 # Start and enable nginx
-	sudo systemctl start nginx
+  sudo systemctl start nginx
   sudo systemctl enable nginx
 # Check nginx status
   sudo systemctl status nginx
 # Allow firewall access
-	sudo ufw allow 'Nginx Full'
+  sudo ufw allow 'Nginx Full'
   sudo ufw status
 # Once nginx is running, in the browser, go to:
   http://66-228-35-9.ip.linodeusercontent.com
@@ -35,37 +35,37 @@
 #######################
 # Clone the github repo
 #######################
-		mkdir -p /var/www/flask-apps
-		cd /var/www/flask-apps
-	  git clone https://github.com/shirwani/SampleFlaskAppOnLinode
+mkdir -p /var/www/flask-apps
+cd /var/www/flask-apps
+git clone https://github.com/shirwani/SampleFlaskAppOnLinode
 
 ###################
 # Run the flask app
 ###################
 # Install python 3 venv (if not already installed)
-cd /var/www/flask-apps/SampleFlaskAppOnLinode
-apt install python3.12-venv
+  cd /var/www/flask-apps/SampleFlaskAppOnLinode
+  apt install python3.12-venv
 
 # Create python venv in project directory
-python3 -m venv venv
+  python3 -m venv venv
 
 # To launch python venv
-source venv/bin/activate
+  source venv/bin/activate
 
 # To pip install from requirements.txt (inside python venv)
-pip install --upgrade pip
-pip install gunicorn
-pip install -r requirements.txt
+  pip install --upgrade pip
+  pip install gunicorn
+  pip install -r requirements.txt
 
 # Run Flask app using gunicorn
-#nohup python main.py &
-gunicorn -b 0.0.0.0:5001 main:app &
+  #nohup python main.py &
+  gunicorn -b 0.0.0.0:5001 main:app &
 
 ##############################################################################################
 # Configure the app to be accessible from the browser locally (laptop/desktop - not on linode)
 ##############################################################################################
 # Create the following file on the linode server: 
-vi /etc/nginx/sites-available/sites
+  vi /etc/nginx/sites-available/sites
 
 server {
     listen 80;
@@ -89,3 +89,5 @@ server {
   sudo service nginx restart
 		
 # The app is available at http://66-228-35-9.ip.linodeusercontent.com/puntacana/
+
+
