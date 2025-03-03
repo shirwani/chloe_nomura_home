@@ -35,9 +35,9 @@
 #######################
 # Clone the github repo
 #######################
-mkdir -p /var/www/flask-apps
-cd /var/www/flask-apps
-git clone https://github.com/shirwani/SampleFlaskAppOnLinode
+  mkdir -p /var/www/flask-apps
+  cd /var/www/flask-apps
+  git clone https://github.com/shirwani/SampleFlaskAppOnLinode
 
 ###################
 # Run the flask app
