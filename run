@@ -2,7 +2,7 @@
 # Update ../linode-flask-nginx-setup/sites
 
 # Create python venv in project directory
-python3 -m venv venv
+python -m venv venv
 
 # To launch python venv
 source venv/bin/activate
