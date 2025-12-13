@@ -12,7 +12,7 @@
 
     <div class="container">
         <div class="product-header">
-            {% if user_type == 'admin' %}
+            {% if user_is_admin %}
             <a href="{{ url_for('edit_product', item_id=item.id) }}" class="btn btn-default">
                 Update Listing
             </a>

@@ -902,7 +902,8 @@ def add_to_cart(item_id):
         # For furniture, just store quantity = 1; prevent duplicates
         if not db.is_item_in_cart(cart_id, item_id):
             user = session.get("user") or {}
-            is_guest = user.get("type") == "guest"
+            roles = user.get("roles") or []
+            is_guest = "guest" in roles
             ttl = 3600 if is_guest else None  # 1 hour TTL for guest carts
             db.add_item_to_cart(cart_id, item_id, quantity=1, ttl_seconds=ttl)
             # As soon as an item enters any cart, mark it as pending in inventory

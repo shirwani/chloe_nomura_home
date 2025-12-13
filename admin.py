@@ -150,7 +150,7 @@ Lower shelf provides extra storage for baskets or books.""",
     db.shutdown()
 
 
-def create_admin_user(firstname, lastname, email, phone, password):
+def create_user(firstname, lastname, email, phone, password, usertype):
     db = DBInterface(db_path="chloe.db")
     db.create_users_table()
 
@@ -161,7 +161,7 @@ def create_admin_user(firstname, lastname, email, phone, password):
         email=email,
         phone=phone,
         password_hash=password_hash,
-        usertype="admin",
+        usertype=usertype,
     )
     db.shutdown()
     print("Admin user created successfully")    
@@ -181,4 +181,6 @@ def hash_user_password(email: str, phone: str, password: str) -> str:
 
 if __name__ == '__main__':
     # seed_database()
-    create_admin_user(firstname="Chloe", lastname="Nomura", email="chloenomura4@gmail.com", phone="617-555-1234", password="33Leland!")
+    # create_user(firstname="Chloe", lastname="Nomura", email="chloenomura4@gmail.com", phone="617-555-1234", password="33Leland!", usertype="admin")
+    create_user(firstname="Cashier", lastname="Shirwani", email="zakishirwani@gmail.com", phone="617-555-1234", password="33Leland!", usertype="cashier")
+    
