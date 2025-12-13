@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Payment Confirmed</title>
+</head>
+<body class="product-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="product-card" style="margin-top: 30px;">
+            <h1 class="product-title">Thank You!</h1>
+            <p>Your payment has been recorded and the selected item(s) have been marked as <strong>Pending</strong> (on hold for pickup).</p>
+            <p>
+                We will hold your piece for local pickup as agreed. If you have any questions about pickup
+                timing or logistics, please reach out directly via your payment channel (Venmo or PayPal).
+            </p>
+            <a href="{{ url_for('get_inventory') }}" class="btn btn-primary">
+                Back to Inventory
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+
+

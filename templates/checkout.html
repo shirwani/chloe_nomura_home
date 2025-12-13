@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Checkout</title>
+</head>
+<body class="product-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="product-header">
+            <a href="{{ url_for('view_cart') }}" class="btn btn-default">
+                &larr; Back to Cart
+            </a>
+        </div>
+
+        <div class="row product-row">
+            <div class="col-sm-7">
+                <div class="product-card">
+                    <h1 class="product-title">Review Your Items</h1>
+
+                    {% if items %}
+                        <ul class="list-group">
+                            {% for item in items %}
+                            <li class="list-group-item">
+                                <div class="row">
+                                    <div class="col-xs-3">
+                                        <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
+                                             alt="{{ item.name }}"
+                                             class="thumbnail-image">
+                                    </div>
+                                    <div class="col-xs-9">
+                                        <strong>{{ item.name }}</strong><br>
+                                        <span class="inventory-price">${{ "%.2f"|format(item.price) }}</span>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+
+                        <h4>Total: ${{ "%.2f"|format(total) }}</h4>
+                    {% else %}
+                        <p>Your cart is empty.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-sm-5">
+                <div class="product-card">
+                    <h2 class="product-title">Payment & Terms</h2>
+
+                    <p><strong>Payment methods accepted:</strong></p>
+                    <ul>
+                        <li>
+                            PayPal Checkout (recommended):<br>
+                            <div id="paypal-button-container"></div>
+                        </li>
+                    </ul>
+
+                    <p><strong>Important terms:</strong></p>
+                    <ul>
+                        <li>We <strong>do not offer shipping</strong>. All pieces are <strong>local pickup only</strong>.</li>
+                        <li>When you complete payment via PayPal Checkout, we will <strong>hold the piece under your name</strong> for pickup.</li>
+                        <li>Once payment is made, we will <strong>mark the item as Pending</strong> (on hold) and it will no longer be available to other buyers.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if total > 0 and paypal_client_id %}
+    <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
+    <script>
+        paypal.Buttons({
+            createOrder: function (data, actions) {
+                return fetch("{{ url_for('paypal_create_order') }}", {
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
+                }).then(function (res) {
+                    return res.json();
+                }).then(function (data) {
+                    if (data.error) {
+                        alert("Unable to start PayPal checkout: " + data.error);
+                        throw new Error(data.error);
+                    }
+                    return data.id;
+                });
+            },
+            onApprove: function (data, actions) {
+                return fetch("{{ url_for('paypal_capture_order') }}", {
+                    method: "post",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ orderID: data.orderID })
+                }).then(function (res) {
+                    return res.json();
+                }).then(function (data) {
+                    if (data.status === "COMPLETED") {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        alert("Payment was not completed. Status: " + (data.status || "unknown"));
+                    }
+                });
+            }
+        }).render("#paypal-button-container");
+    </script>
+    {% endif %}
+</body>
+</html>
+
+

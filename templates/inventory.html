@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Inventory</title>
+</head>
+<body class="inventory-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="inventory-header">
+            <div>
+                <h1>Inventory</h1>
+                <div class="inventory-meta">
+                    {% if total_items is defined %}
+                        Showing
+                        {% if total_items == 0 %}
+                            0
+                        {% else %}
+                            {{ (page - 1) * per_page + 1 }}
+                            –
+                            {{ ((page - 1) * per_page + inventory|length) }}
+                        {% endif %}
+                        of {{ total_items }} item{% if total_items != 1 %}s{% endif %}
+                    {% else %}
+                        {{ inventory|length }} item{% if inventory|length != 1 %}s{% endif %} in catalog
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive inventory-table">
+            <table class="table">
+                <tbody>
+                    {% for item in inventory %}
+                        {% if loop.index0 is divisibleby 5 %}
+                        <tr>
+                        {% endif %}
+
+                        <td class="inventory-card">
+                            <a href="{{ url_for('product_detail', item_id=item.id) }}">
+                                <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
+                                     alt="{{ item.name }}"
+                                     class="thumbnail-image">
+                            </a>
+                            <div class="inventory-name">
+                                <a href="{{ url_for('product_detail', item_id=item.id) }}">
+                                    {{ item.name }}
+                                </a>
+                            </div>
+                            <div class="inventory-price-line">
+                                <span class="inventory-price">
+                                    ${{ "%.2f"|format(item.price) }}
+                                </span>
+                                <span class="status-badge
+                                             {% if item.id|string in cart_item_ids %}status-in-cart
+                                             {% elif item.status == 'available' %}status-available
+                                             {% elif item.status == 'pending' %}status-pending
+                                             {% else %}status-sold{% endif %}">
+                                    {% if item.id|string in cart_item_ids %}
+                                        IN YOUR CART
+                                    {% else %}
+                                        {{ item.status|capitalize }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% if item.description %}
+                            <div class="inventory-description">
+                                {{ item.description|trim|truncate(100, True, '…') }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        {% if loop.index is divisibleby 5 or loop.last %}
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if total_pages is defined and total_pages > 1 %}
+        <nav aria-label="Inventory pagination">
+            <ul class="pagination">
+                <li class="{% if page <= 1 %}disabled{% endif %}">
+                    <a href="{% if page > 1 %}{{ url_for('get_inventory', page=page-1, q=search_query) }}{% else %}#{% endif %}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+
+                {% for p in range(1, total_pages + 1) %}
+                <li class="{% if p == page %}active{% endif %}">
+                    <a href="{{ url_for('get_inventory', page=p, q=search_query) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+
+                <li class="{% if page >= total_pages %}disabled{% endif %}">
+                    <a href="{% if page < total_pages %}{{ url_for('get_inventory', page=page+1, q=search_query) }}{% else %}#{% endif %}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</body>
+</html>
+

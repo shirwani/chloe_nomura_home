@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Edit Listing – {{ item.name }}</title>
+</head>
+<body class="product-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="product-header">
+            <a href="{{ url_for('product_detail', item_id=item.id) }}" class="btn btn-default">
+                &larr; Back to Details
+            </a>
+        </div>
+
+        <div class="row product-row">
+            <div class="col-sm-6">
+                <div class="product-image-wrapper">
+                    <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
+                         alt="{{ item.name }}"
+                         class="product-image img-responsive">
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="product-card">
+                    <h1 class="product-title">Edit Listing</h1>
+                    <form method="post">
+                        <div class="form-group">
+                            <label for="name">Title</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ item.name }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price">Price (USD)</label>
+                            <input type="number" step="0.01" class="form-control" id="price" name="price"
+                                   value="{{ '%.2f'|format(item.price) }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="image_url">Primary Image URL</label>
+                            <input type="text" class="form-control" id="image_url" name="image_url"
+                                   value="{{ item.image_url }}" required>
+                            <p class="help-block">This will be the main image shown first on the details page.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="image_urls">All Image URLs (one per line)</label>
+                            <textarea class="form-control" id="image_urls" name="image_urls" rows="4">{{ image_urls }}</textarea>
+                            <p class="help-block">
+                                Each line should be a path relative to <code>/static</code> (for example
+                                <code>images/example.png</code> or <code>./static/images/example.png</code>).
+                                The first URL will be treated as the primary image.
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="status">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="available" {% if item.status == 'available' %}selected{% endif %}>Available</option>
+                                <option value="pending" {% if item.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="sold" {% if item.status == 'sold' %}selected{% endif %}>Sold</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="6" required>{{ item.description|trim }}</textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+

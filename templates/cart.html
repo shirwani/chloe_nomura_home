@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Your Cart</title>
+</head>
+<body class="inventory-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="inventory-header">
+            <div>
+                <h1>Your Cart</h1>
+                <div class="inventory-meta">
+                    {{ cart_count or 0 }} item{% if (cart_count or 0) != 1 %}s{% endif %} in cart
+                </div>
+            </div>
+        </div>
+
+        {% if items %}
+        <div class="table-responsive inventory-table cart-table">
+            <table class="table table-striped table-hover">
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="center">
+                            <a href="{{ url_for('product_detail', item_id=item.id) }}">
+                                <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
+                                     alt="{{ item.name }}"
+                                     class="thumbnail-image cart-thumbnail">
+                            </a>
+                        </td>
+                        <td class="inventory-name left">
+                            <a href="{{ url_for('product_detail', item_id=item.id) }}">
+                                {{ item.name }}
+                            </a>
+                        </td>
+                        <td class="inventory-price right">
+                            ${{ "%.2f"|format(item.price) }}
+                        </td>
+                        <td class="center">
+                            <form method="post" action="{{ url_for('remove_from_cart', item_id=item.id) }}">
+                                <button type="submit" class="btn btn-link text-danger">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <hr/>
+        
+        <div class="cart-summary right">
+            <h4>Total: ${{ "%.2f"|format(total) }}</h4>
+            <a href="{{ url_for('checkout') }}" class="btn btn-success">
+                Proceed to Checkout
+            </a>
+        </div>
+        {% else %}
+        <p>Your cart is currently empty.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
+
+

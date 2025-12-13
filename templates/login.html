@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Login – Chloe Nomura Home Furnishing</title>
+</head>
+<body class="product-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="product-card" style="margin-top: 30px;">
+            <h1 class="product-title">Login</h1>
+            <p class="product-description">
+                Log in with your email and password, or sign up / continue as a guest.
+            </p>
+
+            {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" class="form-control" id="email" name="email"
+                           value="{{ request.form.get('email', '') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+
+                <button type="submit" name="action" value="login" class="btn btn-primary" style="margin-top: 10px;">
+                    Login
+                </button>
+                <a href="{{ url_for('signup') }}" class="btn btn-default" style="margin-top: 10px; margin-left: 5px;">
+                    Sign Up
+                </a>
+                <button type="submit" name="action" value="guest" class="btn btn-link" style="margin-top: 10px; margin-left: 10px;">
+                    Continue as Guest
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+

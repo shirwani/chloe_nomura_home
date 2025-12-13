@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Contact – Chloe Nomura Home Furnishing</title>
+</head>
+<body class="product-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="product-card" style="margin-top: 30px;">
+            <h1 class="product-title">Contact Chloe Nomura Home Furnishing</h1>
+            <p class="product-description">
+                Have a question about a piece, styling advice, or a custom request? Send a note below and
+                we’ll get back to you as soon as possible.
+            </p>
+
+            {% if status %}
+                <div class="alert alert-success">
+                    {{ status }}
+                </div>
+            {% elif error %}
+                <div class="alert alert-danger">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="post" class="contact-form">
+                <div class="form-group">
+                    <label for="name">Your Name</label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           value="{{ request.form.get('name', '') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Your Email</label>
+                    <input type="email" class="form-control" id="email" name="email"
+                           value="{{ request.form.get('email', '') }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea class="form-control" id="message" name="message" rows="5" required>{{ request.form.get('message', '') }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Send Message
+                </button>
+            </form>
+        </div>
+
+        <div class="product-card" style="margin-top: 20px;">
+            <h2 class="product-title">Visit Us in Maynard, MA</h2>
+            <p class="product-description">
+                Chloe Nomura Home Furnishing is based in beautiful <strong>Maynard, Massachusetts</strong>.
+                Use the map below to explore the area and get directions.
+            </p>
+            <div class="embed-responsive embed-responsive-16by9">
+                <iframe
+                    class="embed-responsive-item"
+                    src="https://www.google.com/maps?q=Maynard,+MA&output=embed"
+                    width="100%"
+                    height="350"
+                    style="border:0;"
+                    allowfullscreen
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+

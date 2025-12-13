@@ -1,0 +1,83 @@
+<div class="logo">
+    <img class="logo-icon" src="{{ url_for('static', filename='images/chloe_nomura_icon.png') }}" alt="Chloe profile image"/>
+    <span class="logo-text">Chloe Nomura Home Furnishing</span>
+</div>
+<div class="top-nav">
+    <div class="container top-nav-inner">
+        <div class="top-nav-left">
+            <button type="button" class="btn btn-link nav-hamburger">
+                <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>
+            </button>
+            <a href="{{ url_for('run') }}" class="btn btn-link">Home</a>
+            <a href="{{ url_for('get_inventory') }}" class="btn btn-link">Inventory</a>
+            <a href="{{ url_for('contact') }}" class="btn btn-link">Contact</a>
+            <form class="top-nav-search" method="get" action="{{ url_for('get_inventory') }}">
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" name="q" placeholder="Search inventory..." value="{{ request.args.get('q', '') }}">
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="submit">
+                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                        </button>
+                    </span>
+                </div>
+            </form>
+        </div>
+        <div class="top-nav-right">
+            {% if cart_label %}
+            <span style="color: #ffffff; padding-right: 5px; vertical-align: middle;">
+                {{ cart_label }}
+            </span>
+            {% endif %}
+            <a href="{{ url_for('view_cart') }}" class="btn btn-link nav-cart">
+                <span class="glyphicon glyphicon-shopping-cart"></span>
+                <span class="cart-count">{{ cart_count or 0 }}</span>
+            </a>
+            {% if user_first_name %}
+            <a href="{{ url_for('logout') }}" class="btn btn-link">Logout</a>
+            {% elif user_type == 'guest' %}
+            <a href="{{ url_for('login', next=request.path) }}" class="btn btn-link">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% if not user_type and request.endpoint not in ['login', 'signup'] %}
+<div class="login-overlay">
+    <div class="login-modal">
+        <h3 class="login-title">Welcome to Chloe Nomura Home</h3>
+        <p class="login-subtitle">Please log in, sign up, or continue as guest to browse and shop.</p>
+        {% if login_error %}
+        <div class="alert alert-danger">
+            {{ login_error }}
+        </div>
+        {% endif %}
+        <form method="post" action="{{ url_for('login') }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div class="form-group">
+                <label for="login_email">Email Address</label>
+                <input type="email"
+                       class="form-control"
+                       id="login_email"
+                       name="email">
+            </div>
+            <div class="form-group">
+                <label for="login_password">Password</label>
+                <input type="password"
+                       class="form-control"
+                       id="login_password"
+                       name="password">
+            </div>
+            <div class="login-actions">
+                <button type="submit" name="action" value="login" class="btn btn-primary">
+                    Login
+                </button>
+                <a href="{{ url_for('signup') }}" class="btn btn-default">
+                    Sign Up
+                </a>
+                <button type="submit" name="action" value="guest" class="btn btn-link">
+                    Continue as Guest
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}

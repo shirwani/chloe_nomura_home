@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Message Sent – Chloe Nomura Home Furnishing</title>
+</head>
+<body class="product-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="product-card" style="margin-top: 30px;">
+            <h1 class="product-title">Thank You for Reaching Out</h1>
+            <p class="product-description">
+                Your message has been sent successfully. We will review it and get back to you as soon as possible.
+            </p>
+
+            <hr>
+
+            <h3 class="product-title">Prefer to talk?</h3>
+            <p class="product-description">
+                You can also contact us by phone at
+                {% if contact_phone %}
+                    <strong><a href="tel:{{ contact_phone }}">{{ contact_phone }}</a></strong>.
+                {% else %}
+                    <strong>(phone number unavailable)</strong>.
+                {% endif %}
+            </p>
+
+            <p class="product-description">
+                Or email us directly at
+                {% if contact_email %}
+                    <strong><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></strong>.
+                {% else %}
+                    <strong>our contact address</strong>.
+                {% endif %}
+            </p>
+
+            <a href="{{ url_for('get_inventory') }}" class="btn btn-primary" style="margin-top: 10px;">
+                Back to Inventory
+            </a>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+

@@ -7,29 +7,78 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="{{ js_path }}"></script>
-    <title>Punta Cana</title>
+    <link rel="stylesheet" href="{{ css_path }}">
+    <title>Chloe Nomura Home</title>
+    <!-- Elegant, theme-appropriate typography for the home page -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lora:wght@400;500&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
     <style>
-        #welcomeMessage { font-style: italic; font-weight: bold; }
-        footer { font-style: italic; }
+        #welcomeMessage {
+            font-style: italic;
+            font-weight: bold;
+        }
+
+        .page-header h1 {
+            font-family: 'Playfair Display', 'Georgia', serif;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: #333333;
+        }
+
+        .page-header p {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 16px;
+            line-height: 1.7;
+            color: #555555;
+            margin-top: 10px;
+        }
+
+        .page-header .signature {
+            font-family: 'Dancing Script', 'Brush Script MT', cursive;
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin-top: 18px;
+        }
+
+        /* Make the home-page jumbotron visually transparent */
+        .jumbotron {
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+        }
     </style>
 </head>
-<body>
+<body class="home-page">
+    {% include 'header.html' %}
+
     <div class="container">
         <div class="page-header">
-           <h1>Welcome!</h1>
+           <h1>Welcome to Chloe Nomura Home!</h1>
+           <p>
+               I'm Chloe, an artist and home decorator with a love for giving beautiful, well-made pieces a second life.
+               Every item in my inventory is pre-loved but in good to great condition, and I personally hand-select each one
+               for its character, craftsmanship, and potential to transform a space.
+           </p>
+           <p>
+               Whether you're looking for a statement coffee table, a charming nightstand, or a one-of-a-kind accent piece,
+               my hope is that you'll find something here that feels like it was made for your home.
+               Take a look through the inventory and imagine how these pieces might tell a new story with you.
+           </p>
+           <p>
+               Some images are AI-generated for staging purposes, but the items are all real and in good condition. 
+               Wherever possible, I've tried to include real images of the items. Feel free to send me a message if 
+               you have any questions or would like to see more images.  
+           </p>
+           <p class="signature">
+               — Chloe Nomura
+           </p>
         </div>
 
         <div class="jumbotron">
-             <img width=500 src="{{ image_path }}"
-                  onMouseOver="displayWelcomeMessage()"
-                  onMouseOut="eraseWelcomeMessage()"
-             />
+             <img width="500" src="{{ image_path }}/chloe_hero_image.png" alt="Chloe Nomura Home hero image"/>
             <span id="welcomeMessage"></span>
         </div>
         <hr/>
-        <footer>
-            <p>Powered by <a href="https://www.linode.com/">Linode</a></p>
-        </footer>
     </div>
 
 </body>
