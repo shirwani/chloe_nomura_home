@@ -61,41 +61,33 @@ img {
   border-collapse: separate;
   border-spacing: 2px 8px; /* small horizontal gap (2px) and vertical space (8px) between cells */
   background: #ffffff;
-}
-
-.inventory-table thead tr {
-  background: transparent;
-}
-
-.inventory-table th {
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: #666;
-  border-bottom: none;
+  table-layout: fixed;      /* respect explicit cell widths (20% each) */
+  max-width: 1100px;        /* prevent single rows from stretching too wide */
+  margin: 0 auto;           /* center the table within the container */
 }
 
 .inventory-table tbody tr {
-  background: #ffffff;
+  background: transparent;
   border-radius: 10px;
 }
 
 .inventory-table tbody tr td {
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-top: none;
+  border-bottom: none;
+  box-shadow: none; /* 0 1px 3px rgba(137, 5, 5, 0.04); */
+  text-align: left;
+  align-items: left;
+  background-color: #f5f5f5; /* very light silver for each cell */
+  border-radius: 10px;       /* rounded corners for each cell */
+  overflow: hidden;          /* ensure contents respect the rounding */
 }
 
 .inventory-table tbody tr td:first-child {
-  border-left: 1px solid #eee;
-  border-top-left-radius: 10px;
-  border-bottom-left-radius: 10px;
+  border: none;
 }
 
 .inventory-table tbody tr td:last-child {
-  border-right: 1px solid #eee;
-  border-top-right-radius: 10px;
-  border-bottom-right-radius: 10px;
+  border: none;
 }
 
 /* Cart page table: remove cell borders and shadow */
@@ -106,7 +98,12 @@ img {
 
 .inventory-card {
   width: 20%;
+  max-width: 20%;
   vertical-align: top;
+  text-align: left;
+  justify-content: left;
+  align-items: left;
+  justify-items: left;
 }
 
 .inventory-price-line {
@@ -157,9 +154,12 @@ img {
 }
 
 .thumbnail-image {
-  width: 100%;   /* match the full width of the inventory cell */
-  height: auto;
+  width: 100%;        /* fill the full width of the cell */
+  max-width: 100%;
+  height: auto;       /* keep aspect ratio so images are not distorted */
   border-radius: 8px;
+  display: block;
+  margin: 0;          /* left-justify inside the cell */
 }
 
 .cart-thumbnail {

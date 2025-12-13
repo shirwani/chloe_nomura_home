@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, url_for, jsonify, abort, redirect, session
-from Cassandra import Cassandra
+from database import DBInterface
+from types import SimpleNamespace
 from datetime import datetime
 import hashlib
 import os
@@ -47,11 +48,11 @@ def inject_globals():
     cart_count = 0
 
     if cart_id:
-        cassandra = Cassandra()
+        db = DBInterface()
         try:
-            cart_count = cassandra.get_cart_item_count(cart_id)
+            cart_count = db.get_cart_item_count(cart_id)
         finally:
-            cassandra.shutdown()
+            db.shutdown()
 
     user_first_name = user.get("name")
     user_type = user.get("type")
@@ -191,15 +192,15 @@ def get_inventory():
     page = request.args.get('page', default=1, type=int)
     per_page = 15
 
-    cassandra = Cassandra()
-    data = cassandra.get_all_data('inventory')
+    db = DBInterface()
+    data = db.get_all_data('inventory')
     items = list(data)
 
     # Determine which items are currently in this user's cart
     cart_item_ids = set()
     cart_id = session.get('cart_id')
     if cart_id:
-        cart_rows = cassandra.get_cart_items(cart_id)
+        cart_rows = db.get_cart_items(cart_id)
         cart_item_ids = {str(row.item_id) for row in cart_rows}
 
     if query:
@@ -249,19 +250,19 @@ def get_inventory():
 
 @app.route('/inventory/<item_id>', methods=['GET'])
 def product_detail(item_id):
-    cassandra = Cassandra()
+    db = DBInterface()
     cart_id = session.get('cart_id')
     in_cart = False
     if cart_id:
-        in_cart = cassandra.is_item_in_cart(cart_id, item_id)
+        in_cart = db.is_item_in_cart(cart_id, item_id)
 
-    item = cassandra.get_item_by_id('inventory', item_id)
+    item = db.get_item_by_id('inventory', item_id)
     if item is None:
-        cassandra.shutdown()
+        db.shutdown()
         abort(404)
     # Load any additional images for this item; fall back to primary image_url
-    images = cassandra.get_images_for_item(item_id)
-    cassandra.shutdown()
+    images = db.get_images_for_item(item_id)
+    db.shutdown()
     if not images:
         images = [item.image_url] if getattr(item, "image_url", None) else []
 
@@ -292,7 +293,7 @@ def product_detail(item_id):
 
 @app.route('/inventory/<item_id>/edit', methods=['GET', 'POST'])
 def edit_product(item_id):
-    cassandra = Cassandra()
+    db = DBInterface()
     if request.method == 'POST':
         form = request.form
         update_data = {
@@ -317,24 +318,90 @@ def edit_product(item_id):
             if url not in all_images:
                 all_images.append(url)
 
-        cassandra.update_item('inventory', item_id, update_data)
+        db.update_item('inventory', item_id, update_data)
         if all_images:
-            cassandra.set_images_for_item(item_id, all_images)
-        cassandra.shutdown()
+            db.set_images_for_item(item_id, all_images)
+        db.shutdown()
         return redirect(url_for('product_detail', item_id=item_id))
     else:
-        item = cassandra.get_item_by_id('inventory', item_id)
+        item = db.get_item_by_id('inventory', item_id)
         if item is None:
-            cassandra.shutdown()
+            db.shutdown()
             abort(404)
         # Pre-populate image URLs: any stored images or fall back to the primary
-        images = cassandra.get_images_for_item(item_id)
-        cassandra.shutdown()
+        images = db.get_images_for_item(item_id)
+        db.shutdown()
         if images:
             image_urls_text = "\n".join(images)
         else:
             image_urls_text = getattr(item, "image_url", "") or ""
-        return render_template("edit_product.html", item=item, image_urls=image_urls_text)
+        return render_template("edit_product.html", item=item, image_urls=image_urls_text, is_new=False)
+
+
+@app.route('/inventory/add', methods=['GET', 'POST'])
+def add_product():
+    """
+    Admin-only: add a new inventory item.
+    Reuses the edit_product template with an empty item.
+    """
+    user = session.get("user") or {}
+    if user.get("type") != "admin":
+        abort(403)
+
+    db = DBInterface()
+    if request.method == "POST":
+        form = request.form
+        name = (form.get("name") or "").strip()
+        price_raw = (form.get("price") or "0").strip()
+        description = (form.get("description") or "").strip()
+        image_url = (form.get("image_url") or "").strip()
+        status = (form.get("status") or "available").strip().lower() or "available"
+
+        try:
+            price = float(price_raw or 0)
+        except ValueError:
+            price = 0.0
+
+        insert_data = {
+            "name": name,
+            "price": price,
+            "description": description,
+            "image_url": image_url,
+            "status": status,
+        }
+
+        # Build image list (primary + extra)
+        images_text = form.get("image_urls", "")
+        extra_images = [
+            line.strip()
+            for line in images_text.splitlines()
+            if line.strip()
+        ]
+        all_images = []
+        if image_url:
+            all_images.append(image_url)
+        for url in extra_images:
+            if url not in all_images:
+                all_images.append(url)
+
+        # Insert new item
+        item_id = db.insert_data("inventory", insert_data)
+        if all_images:
+            db.set_images_for_item(item_id, all_images)
+        db.shutdown()
+        return redirect(url_for("product_detail", item_id=item_id))
+
+    # GET: render an empty item for the form
+    empty_item = SimpleNamespace(
+        id="",
+        name="",
+        price=0.0,
+        description="",
+        image_url="",
+        status="available",
+    )
+    db.shutdown()
+    return render_template("edit_product.html", item=empty_item, image_urls="", is_new=True)
 
 
 @app.route('/contact', methods=['GET', 'POST'])
@@ -412,15 +479,15 @@ def signup():
         elif not password_is_strong(password):
             error = "Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters."
         else:
-            cassandra = Cassandra()
-            cassandra.create_users_table()
-            existing = cassandra.get_user_by_email(email)
+            db = DBInterface()
+            db.create_users_table()
+            existing = db.get_user_by_email(email)
             if existing:
                 error = "An account with that email already exists."
-                cassandra.shutdown()
+                db.shutdown()
             else:
                 password_hash = hash_user_password(email, phone, password)
-                user_id = cassandra.insert_user(
+                user_id = db.insert_user(
                     firstname=first_name,
                     lastname=last_name,
                     email=email,
@@ -428,7 +495,7 @@ def signup():
                     phone=phone or None,
                     usertype="customer",
                 )
-                cassandra.shutdown()
+                db.shutdown()
 
                 # After successful sign up, send the user to the login page
                 return redirect(url_for('login'))
@@ -471,9 +538,9 @@ def login():
     if not email or not password:
         error = "Please enter both username (email) and password."
     else:
-        cassandra = Cassandra()
-        cassandra.create_users_table()
-        user = cassandra.get_user_by_email(email)
+        db = DBInterface()
+        db.create_users_table()
+        user = db.get_user_by_email(email)
 
         if not user:
             error = "Invalid username or password."
@@ -496,14 +563,14 @@ def login():
                 cart_id = session.get("cart_id")
                 if cart_id:
                     try:
-                        cassandra.normalize_cart_items(cart_id)
+                        db.normalize_cart_items(cart_id)
                     except Exception:
                         # Don't block login if normalization fails
                         pass
-                cassandra.shutdown()
+                db.shutdown()
                 return redirect(next_url)
 
-        cassandra.shutdown()
+        db.shutdown()
 
     # If we reach here there was a validation error; surface it via session
     session['login_error'] = error
@@ -518,11 +585,11 @@ def logout():
     # If there is an active cart, clear it and discard the cart_id
     cart_id = session.get('cart_id')
     if cart_id:
-        cassandra = Cassandra()
+        db = DBInterface()
         try:
-            cassandra.clear_cart(cart_id)
+            db.clear_cart(cart_id)
         finally:
-            cassandra.shutdown()
+            db.shutdown()
         session.pop('cart_id', None)
 
     session.pop('user', None)
@@ -535,11 +602,11 @@ def view_cart():
     total = 0.0
     cart_id = session.get('cart_id')
     if cart_id:
-        cassandra = Cassandra()
+        db = DBInterface()
         try:
-            cart_rows = cassandra.get_cart_items(cart_id)
+            cart_rows = db.get_cart_items(cart_id)
             for row in cart_rows:
-                item = cassandra.get_item_by_id('inventory', str(row.item_id))
+                item = db.get_item_by_id('inventory', str(row.item_id))
                 if item is not None:
                     items.append(item)
                     try:
@@ -548,31 +615,31 @@ def view_cart():
                     except Exception:
                         pass
         finally:
-            cassandra.shutdown()
+            db.shutdown()
     return render_template("cart.html", items=items, total=total)
 
 
 @app.route('/cart/add/<item_id>', methods=['POST'])
 def add_to_cart(item_id):
     # Only allow adding items that are still available
-    cassandra = Cassandra()
+    db = DBInterface()
     try:
-        item = cassandra.get_item_by_id('inventory', item_id)
+        item = db.get_item_by_id('inventory', item_id)
         if item is None or getattr(item, "status", "").lower() != "available":
             # Silently redirect back if the item is no longer available
             return redirect(url_for('product_detail', item_id=item_id))
 
         cart_id = get_or_create_cart_id()
         # For furniture, just store quantity = 1; prevent duplicates
-        if not cassandra.is_item_in_cart(cart_id, item_id):
+        if not db.is_item_in_cart(cart_id, item_id):
             user = session.get("user") or {}
             is_guest = user.get("type") == "guest"
             ttl = 3600 if is_guest else None  # 1 hour TTL for guest carts
-            cassandra.add_item_to_cart(cart_id, item_id, quantity=1, ttl_seconds=ttl)
+            db.add_item_to_cart(cart_id, item_id, quantity=1, ttl_seconds=ttl)
             # As soon as an item enters any cart, mark it as pending in inventory
-            cassandra.mark_items_sold('inventory', [item_id])
+            db.mark_items_sold('inventory', [item_id])
     finally:
-        cassandra.shutdown()
+        db.shutdown()
     return redirect(url_for('product_detail', item_id=item_id))
 
 
@@ -580,14 +647,14 @@ def add_to_cart(item_id):
 def remove_from_cart(item_id):
     cart_id = session.get('cart_id')
     if cart_id:
-        cassandra = Cassandra()
+        db = DBInterface()
         try:
-            cassandra.remove_item_from_cart(cart_id, item_id)
+            db.remove_item_from_cart(cart_id, item_id)
             # If no other cart still contains this item, mark it available again
-            if not cassandra.item_is_in_any_cart(item_id):
-                cassandra.mark_items_available('inventory', [item_id])
+            if not db.item_is_in_any_cart(item_id):
+                db.mark_items_available('inventory', [item_id])
         finally:
-            cassandra.shutdown()
+            db.shutdown()
     return redirect(url_for('view_cart'))
 
 
@@ -598,11 +665,11 @@ def checkout():
     total = 0.0
     cart_id = session.get('cart_id')
     if cart_id:
-        cassandra = Cassandra()
+        db = DBInterface()
         try:
-            cart_rows = cassandra.get_cart_items(cart_id)
+            cart_rows = db.get_cart_items(cart_id)
             for row in cart_rows:
-                item = cassandra.get_item_by_id('inventory', str(row.item_id))
+                item = db.get_item_by_id('inventory', str(row.item_id))
                 if item is not None:
                     items.append(item)
                     try:
@@ -611,7 +678,7 @@ def checkout():
                     except Exception:
                         pass
         finally:
-            cassandra.shutdown()
+            db.shutdown()
 
     return render_template(
         "checkout.html",
@@ -649,11 +716,11 @@ def paypal_create_order():
     cart_id = session.get('cart_id')
 
     if cart_id:
-        cassandra = Cassandra()
+        db = DBInterface()
         try:
-            cart_rows = cassandra.get_cart_items(cart_id)
+            cart_rows = db.get_cart_items(cart_id)
             for row in cart_rows:
-                item = cassandra.get_item_by_id('inventory', str(row.item_id))
+                item = db.get_item_by_id('inventory', str(row.item_id))
                 if item is not None:
                     items.append(item)
                     try:
@@ -662,7 +729,7 @@ def paypal_create_order():
                     except Exception:
                         pass
         finally:
-            cassandra.shutdown()
+            db.shutdown()
 
     if not items or total <= 0:
         return jsonify({"error": "Cart is empty or total is invalid."}), 400
@@ -715,15 +782,15 @@ def paypal_capture_order():
     if status == "COMPLETED":
         cart_id = session.get('cart_id')
         if cart_id:
-            cassandra = Cassandra()
+            db = DBInterface()
             try:
-                cart_rows = cassandra.get_cart_items(cart_id)
+                cart_rows = db.get_cart_items(cart_id)
                 item_ids = [str(row.item_id) for row in cart_rows]
                 if item_ids:
-                    cassandra.mark_items_sold('inventory', item_ids)
-                cassandra.clear_cart(cart_id)
+                    db.mark_items_sold('inventory', item_ids)
+                db.clear_cart(cart_id)
             finally:
-                cassandra.shutdown()
+                db.shutdown()
             session.pop('cart_id', None)
 
     return jsonify(

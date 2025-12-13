@@ -5,16 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Edit Listing – {{ item.name }}</title>
+    <title>{% if is_new %}Add Listing{% else %}Edit Listing – {{ item.name }}{% endif %}</title>
 </head>
 <body class="product-page">
     {% include 'header.html' %}
 
     <div class="container">
         <div class="product-header">
+            {% if item.id %}
             <a href="{{ url_for('product_detail', item_id=item.id) }}" class="btn btn-default">
                 &larr; Back to Details
             </a>
+            {% else %}
+            <a href="{{ url_for('get_inventory') }}" class="btn btn-default">
+                &larr; Back to Inventory
+            </a>
+            {% endif %}
         </div>
 
         <div class="row product-row">
@@ -27,7 +33,9 @@
             </div>
             <div class="col-sm-6">
                 <div class="product-card">
-                    <h1 class="product-title">Edit Listing</h1>
+                    <h1 class="product-title">
+                        {% if is_new %}Add Listing{% else %}Edit Listing{% endif %}
+                    </h1>
                     <form method="post">
                         <div class="form-group">
                             <label for="name">Title</label>
