@@ -39,7 +39,7 @@
             {% endif %}
         </div>
 
-        <div class="table-responsive inventory-table">
+        <div class="table-responsive inventory-table {% if inventory|length == 1 %}single-item-table{% endif %}">
             <table class="table">
                 <tbody>
                     {% for item in inventory %}
@@ -76,7 +76,7 @@
                             </div>
                             {% if item.description %}
                             <div class="inventory-description">
-                                {{ item.description|trim|truncate(100, True, '…') }}
+                                {{ item.description|trim|truncate(300, True, '…') }}
                             </div>
                             {% endif %}
                         </td>

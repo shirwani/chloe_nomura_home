@@ -1,35 +1,23 @@
+# Point python to system python
 alias python3="/opt/homebrew/bin/python3.12"
 
 # Create python venv directory
-  python3 -m venv venv
+python3 -m venv venv
 
 # To launch python venv
-  source venv/bin/activate
+source venv/bin/activate
 
 # Set the python and pip alias to point to the venv/bin
 alias python=/Users/macmini/projects/Cursor/chloe_nomura_home/venv/bin/python3
 alias pip=/Users/macmini/projects/Cursor/chloe_nomura_home/venv/bin/pip3
 
 # To pip install from requirements.txt (inside python venv)
-  pip install --upgrade pip
-  pip install cassandra-driver
-  pip install -r requirements.txt
+pip install --upgrade pip
+pip install cassandra-driver
+pip install -r requirements.txt
 
 # Run the app
 python main.py
 
 
-###########
-# Cassandra
-###########
-docker pull cassandra:latest
-docker run --name cassandra-container-chloe -p 9042:9042 -d cassandra:latest
-docker exec -it cassandra-container-chloe cqlsh
-
-CREATE KEYSPACE chloe
-WITH REPLICATION = {
-  'class': 'SimpleStrategy',
-  'replication_factor': 1
-};
-# List tables in the keyspace
-describe tables;
+Uses SQLlite as database

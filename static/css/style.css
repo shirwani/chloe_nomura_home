@@ -66,6 +66,12 @@ img {
   margin: 0 auto;           /* center the table within the container */
 }
 
+/* Special case: when there is only one item in the inventory table,
+   keep the table narrow so the single cell never exceeds ~200px. */
+.inventory-table.single-item-table table {
+  max-width: 200px; /* 5 columns * 20% = 200px max per cell */
+}
+
 .inventory-table tbody tr {
   background: transparent;
   border-radius: 10px;
