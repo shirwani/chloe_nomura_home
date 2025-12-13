@@ -33,14 +33,17 @@
                 <span class="cart-count">{{ cart_count or 0 }}</span>
             </a>
             {% if user_first_name %}
-            <a href="{{ url_for('logout') }}" class="btn btn-link">Logout</a>
-            {% elif user_type == 'guest' %}
+                {% if user_is_admin %}
+                <a href="{{ url_for('admin_users') }}" class="btn btn-link">Admin</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="btn btn-link">Logout</a>
+            {% elif user_is_guest %}
             <a href="{{ url_for('login', next=request.path) }}" class="btn btn-link">Login</a>
             {% endif %}
         </div>
     </div>
 </div>
-{% if not user_type and request.endpoint not in ['login', 'signup'] %}
+{% if not user_roles and request.endpoint not in ['login', 'signup', 'forgot_password', 'reset_password'] %}
 <div class="login-overlay">
     <div class="login-modal">
         <h3 class="login-title">Welcome to Chloe Nomura Home</h3>
@@ -50,34 +53,132 @@
             {{ login_error }}
         </div>
         {% endif %}
-        <form method="post" action="{{ url_for('login') }}">
+        <form method="post" action="{{ url_for('login') }}" id="login-form">
             <input type="hidden" name="next" value="{{ request.path }}">
-            <div class="form-group">
-                <label for="login_email">Email Address</label>
-                <input type="email"
-                       class="form-control"
-                       id="login_email"
-                       name="email">
+
+            <div id="login-mode">
+                <div class="form-group">
+                    <label for="login_email">Email Address</label>
+                    <input type="email"
+                           class="form-control"
+                           id="login_email"
+                           name="email"
+                           required>
+                </div>
+                <div class="form-group">
+                    <label for="login_password">Password</label>
+                    <input type="password"
+                           class="form-control"
+                           id="login_password"
+                           name="password">
+                </div>
+                <div class="login-actions">
+                    <button type="submit" name="action" value="login" class="btn btn-primary">
+                        Login
+                    </button>
+                    <a href="{{ url_for('signup') }}" class="btn btn-default">
+                        Sign Up
+                    </a>
+                    <button type="submit"
+                            name="action"
+                            value="guest"
+                            class="btn btn-link"
+                            onclick="prepareGuestContinue()">
+                        Continue as Guest
+                    </button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button type="button"
+                            class="btn btn-link"
+                            onclick="showForgotPasswordMode()">
+                        Forgot password?
+                    </button>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="login_password">Password</label>
-                <input type="password"
-                       class="form-control"
-                       id="login_password"
-                       name="password">
-            </div>
-            <div class="login-actions">
-                <button type="submit" name="action" value="login" class="btn btn-primary">
-                    Login
-                </button>
-                <a href="{{ url_for('signup') }}" class="btn btn-default">
-                    Sign Up
-                </a>
-                <button type="submit" name="action" value="guest" class="btn btn-link">
-                    Continue as Guest
-                </button>
+
+            <div id="forgot-password-mode" style="display: none;">
+                <div class="form-group">
+                    <label for="fp_email_inline">Email Address</label>
+                    <input type="email"
+                           class="form-control"
+                           id="fp_email_inline"
+                           name="reset_email">
+                </div>
+                <div class="login-actions">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            formaction="{{ url_for('forgot_password_send_link') }}"
+                            formmethod="post">
+                        Send Reset Password Link
+                    </button>
+                    <button type="submit"
+                            name="action"
+                            value="guest"
+                            class="btn btn-link"
+                            onclick="prepareGuestContinue()">
+                        Continue as Guest
+                    </button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button type="button"
+                            class="btn btn-link"
+                            onclick="showLoginMode()">
+                        Back to Login
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 </div>
+{% endif %}
+<script>
+function prepareGuestContinue() {
+  var email1 = document.getElementById('login_email');
+  var email2 = document.getElementById('fp_email_inline');
+  if (email1) {
+    email1.removeAttribute('required');
+  }
+  if (email2) {
+    email2.removeAttribute('required');
+  }
+}
+function showForgotPasswordMode() {
+  var login = document.getElementById('login-mode');
+  var forgot = document.getElementById('forgot-password-mode');
+  var email1 = document.getElementById('login_email');
+  var email2 = document.getElementById('fp_email_inline');
+  if (login && forgot) {
+    login.style.display = 'none';
+    forgot.style.display = 'block';
+  }
+  if (email1) {
+    email1.removeAttribute('required');
+  }
+  if (email2) {
+    email2.setAttribute('required', 'required');
+  }
+}
+function showLoginMode() {
+  var login = document.getElementById('login-mode');
+  var forgot = document.getElementById('forgot-password-mode');
+  var email1 = document.getElementById('login_email');
+  var email2 = document.getElementById('fp_email_inline');
+  if (login && forgot) {
+    forgot.style.display = 'none';
+    login.style.display = 'block';
+  }
+  if (email2) {
+    email2.removeAttribute('required');
+  }
+  if (email1) {
+    email1.setAttribute('required', 'required');
+  }
+}
+</script>
+{% if login_forgot_mode %}
+<script>
+  // When coming back from "Send Reset Password Link", reopen the forgot-password
+  // view so the user sees the confirmation message alongside the email field.
+  showForgotPasswordMode();
+</script>
 {% endif %}

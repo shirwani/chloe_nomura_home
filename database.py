@@ -7,6 +7,36 @@ from uuid import uuid4
 DB_PATH = "chloe.db"
 
 
+def parse_roles(raw: str | None) -> list[str]:
+    """
+    Convert a comma-separated roles string into a normalized list of roles.
+    Example: "admin, cashier" -> ["admin", "cashier"]
+    """
+    if not raw:
+        return []
+    return [part.strip().lower() for part in str(raw).split(",") if part.strip()]
+
+
+def format_roles(roles) -> str:
+    """
+    Convert a list of roles into a single comma-separated string for storage.
+    """
+    if roles is None:
+        return ""
+    if isinstance(roles, str):
+        # assume it's already a suitable representation
+        return roles
+    # de-duplicate while preserving order
+    seen = set()
+    normalized = []
+    for r in roles:
+        r_norm = str(r).strip().lower()
+        if r_norm and r_norm not in seen:
+            seen.add(r_norm)
+            normalized.append(r_norm)
+    return ",".join(normalized)
+
+
 class DBInterface:
     """
     Compatibility wrapper that exposes the same interface as the previous
@@ -27,6 +57,7 @@ class DBInterface:
         self.create_users_table()
         self._ensure_images_table()
         self._ensure_cart_items_table()
+        self._ensure_password_reset_table()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -140,6 +171,55 @@ class DBInterface:
         """
         self._execute(query)
 
+    def _ensure_password_reset_table(self):
+        """
+        Ensure the password_reset_tokens table exists.
+        Schema:
+          - token      TEXT PRIMARY KEY
+          - user_id    TEXT (references users.id)
+          - expires_at TEXT (ISO-8601 timestamp)
+        """
+        query = """
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                token      TEXT PRIMARY KEY,
+                user_id    TEXT,
+                expires_at TEXT
+            );
+        """
+        self._execute(query)
+
+    # ------------------------------------------------------------------
+    # Password reset token helpers
+    # ------------------------------------------------------------------
+
+    def create_password_reset_token(self, user_id: str, token: str, expires_at: str):
+        """
+        Store a password reset token for a user. Any existing token with the same
+        value will be overwritten.
+        """
+        self._ensure_password_reset_table()
+        query = """
+            INSERT OR REPLACE INTO password_reset_tokens (token, user_id, expires_at)
+            VALUES (?, ?, ?);
+        """
+        self._execute(query, (token, user_id, expires_at))
+
+    def get_password_reset_token(self, token: str):
+        """
+        Fetch a password reset token row by token value.
+        """
+        self._ensure_password_reset_table()
+        query = "SELECT token, user_id, expires_at FROM password_reset_tokens WHERE token = ?;"
+        cur = self._execute(query, (token,))
+        return cur.fetchone()
+
+    def delete_password_reset_token(self, token: str):
+        """
+        Delete a single password reset token.
+        """
+        self._ensure_password_reset_table()
+        self._execute("DELETE FROM password_reset_tokens WHERE token = ?;", (token,))
+
     # ------------------------------------------------------------------
     # Inventory operations
     # ------------------------------------------------------------------
@@ -191,6 +271,40 @@ class DBInterface:
         cur = self._execute(query, (email,))
         return cur.fetchone()
 
+    def get_user_by_id(self, user_id: str):
+        """
+        Fetch a single user by primary key id.
+        """
+        query = "SELECT * FROM users WHERE id = ?;"
+        cur = self._execute(query, (user_id,))
+        return cur.fetchone()
+
+    def get_all_users(self):
+        """
+        Return all users in the system, ordered by last name then first name.
+        """
+        query = "SELECT * FROM users ORDER BY lastname, firstname;"
+        cur = self._execute(query)
+        return cur.fetchall()
+
+    def search_users(self, query_text: str):
+        """
+        Search users by partial match on firstname, lastname, email, phone, or usertype.
+        """
+        like = f"%{query_text}%"
+        query = """
+            SELECT *
+            FROM users
+            WHERE firstname LIKE ?
+               OR lastname LIKE ?
+               OR email LIKE ?
+               OR phone LIKE ?
+               OR usertype LIKE ?
+            ORDER BY lastname, firstname;
+        """
+        cur = self._execute(query, (like, like, like, like, like))
+        return cur.fetchall()
+
     def insert_user(self, firstname: str, lastname: str, email: str, password_hash: str,
                     phone: str = None, usertype: str = "customer"):
         """
@@ -215,6 +329,30 @@ class DBInterface:
             ),
         )
         return user_id
+
+    def update_user(self, user_id: str, data: dict):
+        """
+        Update fields for an existing user. The `data` dict may include any of:
+        firstname, lastname, email, phone, usertype, password (already hashed).
+        Only provided fields will be updated.
+        """
+        if not data:
+            return
+
+        allowed_keys = {"firstname", "lastname", "email", "phone", "usertype", "password"}
+        set_clauses = []
+        params = []
+        for key, value in data.items():
+            if key in allowed_keys:
+                set_clauses.append(f"{key} = ?")
+                params.append(value)
+
+        if not set_clauses:
+            return
+
+        sql = f"UPDATE users SET {', '.join(set_clauses)} WHERE id = ?;"
+        params.append(user_id)
+        self._execute(sql, tuple(params))
 
     def update_item(self, tablename, item_id: str, data: dict):
         """

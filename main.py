@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, url_for, jsonify, abort, redirect, session
-from database import DBInterface
+from database import DBInterface, parse_roles
 from types import SimpleNamespace
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 import os
 import re
@@ -55,20 +55,29 @@ def inject_globals():
             db.shutdown()
 
     user_first_name = user.get("name")
-    user_type = user.get("type")
+    roles = user.get("roles") or []
+    is_guest = "guest" in roles
+    is_admin = "admin" in roles
+
     if user_first_name:
         cart_label = f"{user_first_name}'s cart:"
+    elif is_guest:
+        cart_label = "Your cart:"
     else:
         cart_label = None
 
     login_error = session.pop("login_error", None)
+    login_forgot_mode = session.pop("login_forgot_mode", False)
 
     return {
         "cart_count": cart_count,
         "user_first_name": user_first_name,
-        "user_type": user_type,
+        "user_roles": roles,
+        "user_is_admin": is_admin,
+        "user_is_guest": is_guest,
         "cart_label": cart_label,
         "login_error": login_error,
+        "login_forgot_mode": login_forgot_mode,
     }
 
 
@@ -80,7 +89,15 @@ def redirect_anonymous_to_home():
     send them to the home page, where the login modal will appear.
     """
     # Allow these endpoints without redirect
-    if request.endpoint in ("run", "login", "signup", "static"):
+    if request.endpoint in (
+        "run",
+        "login",
+        "signup",
+        "forgot_password",
+        "forgot_password_send_link",
+        "reset_password",
+        "static",
+    ):
         return
 
     # Some requests might not have a resolvable endpoint
@@ -96,8 +113,8 @@ def redirect_anonymous_to_home():
 def run():
     return render_template(
         "index.html",
-        image_path='./static/images',
-        js_path='static/js/script.js',
+                           image_path='./static/images',
+                           js_path='static/js/script.js',
         css_path='static/css/style.css',
     )
 
@@ -119,6 +136,37 @@ def send_contact_email(name: str, from_email: str, message_body: str) -> None:
         f"New contact form submission:\n\n"
         f"From: {name} <{from_email}>\n\n"
         f"Message:\n{message_body}\n"
+    )
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            if SMTP_USERNAME and SMTP_PASSWORD:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+    except Exception:
+        # In production you might want to log this exception.
+        pass
+
+
+def send_password_reset_email(to_email: str, reset_url: str) -> None:
+    """
+    Send a reset-password email with a link to the Reset Password page
+    where the user can choose a new password.
+    """
+    if not SMTP_HOST or not SMTP_PORT or not to_email:
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = "Chloe Nomura Home - Reset Your Password"
+    msg["From"] = SMTP_USERNAME or CONTACT_RECIPIENT_EMAIL
+    msg["To"] = to_email
+    msg.set_content(
+        "We received a request to reset your password for Chloe Nomura Home.\n\n"
+        "To choose a new password, click the link below (or paste it into your browser).\n"
+        "For your security, this link is only valid for 5 minutes:\n\n"
+        f"{reset_url}\n\n"
+        "If you did not request this, you can ignore this email."
     )
 
     try:
@@ -345,7 +393,8 @@ def add_product():
     Reuses the edit_product template with an empty item.
     """
     user = session.get("user") or {}
-    if user.get("type") != "admin":
+    roles = user.get("roles") or []
+    if "admin" not in roles:
         abort(403)
 
     db = DBInterface()
@@ -446,6 +495,209 @@ def contact_sent():
     )
 
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """
+    Allow a user to choose a new password by providing their email address
+    and a new password. On success, redirect back to the home page where the
+    login dialog will appear.
+    """
+    error = None
+
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+        confirm = request.form.get("confirm_password") or ""
+
+        if not email:
+            error = "Please enter your email address."
+        elif not password or not confirm:
+            error = "Please enter and confirm your new password."
+        elif password != confirm:
+            error = "Passwords do not match."
+        elif not password_is_strong(password):
+            error = "Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters."
+        else:
+            db = DBInterface()
+            try:
+                user = db.get_user_by_email(email)
+                if not user:
+                    error = "We could not find an account with that email address."
+                else:
+                    phone = getattr(user, "phone", "") or ""
+                    new_hash = hash_user_password(email, phone, password)
+                    db.update_user(str(user.id), {"password": new_hash})
+                    # After successful reset, send user back to home with login dialog
+                    return redirect(url_for("run"))
+            finally:
+                db.shutdown()
+
+    return render_template(
+        "forgot_password.html",
+        error=error,
+    )
+
+
+@app.route('/forgot-password/send-link', methods=['POST'])
+def forgot_password_send_link():
+    """
+    Handle the inline \"Forgot password\" flow from the login modal:
+    send an email with a link back to the Forgot Password page.
+    """
+    # Prefer the inline forgot-password email field, but fall back to the
+    # generic "email" field name for safety.
+    email = (
+        request.form.get("reset_email")
+        or request.form.get("email")
+        or ""
+    ).strip().lower()
+    if email:
+        db = DBInterface()
+        try:
+            user = db.get_user_by_email(email)
+            if user:
+                # Create a one-time token that is valid for 5 minutes.
+                token = uuid.uuid4().hex
+                expires_at = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+                db.create_password_reset_token(str(user.id), token, expires_at)
+
+                reset_url = url_for("reset_password", token=token, _external=True)
+                send_password_reset_email(email, reset_url)
+        finally:
+            db.shutdown()
+
+        session['login_error'] = (
+            "If an account with that email exists, we've emailed a reset link. "
+            "Please check your email for the link to reset your password."
+        )
+        session['login_forgot_mode'] = True
+
+    # Redirect back to home; the login modal will show with the message.
+    return redirect(url_for("run"))
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """
+    Handle password reset using a one-time token from the email link.
+    On success, redirect back to the home page, where the login dialog will appear.
+    """
+    db = DBInterface()
+    error = None
+    try:
+        row = db.get_password_reset_token(token)
+        if not row:
+            error = "This password reset link is invalid or has expired."
+        else:
+            # Validate expiration
+            try:
+                expires_at = datetime.fromisoformat(row.expires_at)
+            except Exception:
+                expires_at = None
+
+            if not expires_at or datetime.utcnow() > expires_at:
+                db.delete_password_reset_token(token)
+                error = "This password reset link has expired. Please request a new one."
+            elif request.method == "POST":
+                password = request.form.get("password") or ""
+                confirm = request.form.get("confirm_password") or ""
+
+                if not password or not confirm:
+                    error = "Please enter and confirm your new password."
+                elif password != confirm:
+                    error = "Passwords do not match."
+                elif not password_is_strong(password):
+                    error = "Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters."
+                else:
+                    user = db.get_user_by_id(str(row.user_id))
+                    if not user:
+                        error = "User account could not be found."
+                    else:
+                        email = (getattr(user, "email", "") or "").lower()
+                        phone = getattr(user, "phone", "") or ""
+                        new_hash = hash_user_password(email, phone, password)
+                        db.update_user(str(user.id), {"password": new_hash})
+                        db.delete_password_reset_token(token)
+                        # After successful reset, send user back to home with login dialog
+                        return redirect(url_for("run"))
+    finally:
+        db.shutdown()
+
+    return render_template(
+        "reset_password.html",
+        error=error,
+    )
+
+
+@app.route('/admin/users', methods=['GET', 'POST'])
+def admin_users():
+    """
+    Admin-only user management page.
+    Allows searching existing users and updating basic user info (not passwords).
+    """
+    user = session.get("user") or {}
+    roles = user.get("roles") or []
+    if "admin" not in roles:
+        abort(403)
+
+    db = DBInterface()
+    error = None
+    success = None
+
+    try:
+        if request.method == "POST":
+            action = request.form.get("action", "").strip()
+
+            if action == "update":
+                user_id = (request.form.get("user_id") or "").strip()
+                if not user_id:
+                    error = "Missing user id for update."
+                else:
+                    existing = db.get_user_by_id(user_id)
+                    if not existing:
+                        error = "User not found."
+                    else:
+                        first_name = (request.form.get("first_name") or "").strip()
+                        last_name = (request.form.get("last_name") or "").strip()
+                        email = (request.form.get("email") or "").strip().lower()
+                        phone = (request.form.get("phone") or "").strip()
+                        usertype_raw = (request.form.get("usertype") or "").strip().lower()
+
+                        update_data = {}
+                        if first_name:
+                            update_data["firstname"] = first_name
+                        if last_name:
+                            update_data["lastname"] = last_name
+                        if email:
+                            update_data["email"] = email
+                        if phone:
+                            update_data["phone"] = phone
+                        if usertype_raw:
+                            update_data["usertype"] = usertype_raw
+
+                        if not error and update_data:
+                            db.update_user(user_id, update_data)
+                            success = "User updated successfully."
+
+        # Determine search query (GET param). If no query is provided,
+        # do not show any users by default.
+        search_query = (request.args.get("q") or "").strip()
+        if search_query:
+            users = db.search_users(search_query)
+        else:
+            users = []
+    finally:
+        db.shutdown()
+
+    return render_template(
+        "admin.html",
+        users=users,
+        search_query=search_query,
+        error=error,
+        success=success,
+    )
+
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     """
@@ -460,7 +712,7 @@ def signup():
         if action == "guest":
             # Simple guest "sign-in": mark session and redirect
             session['user'] = {
-                "type": "guest",
+                "roles": ["guest"],
             }
             return redirect(url_for('get_inventory'))
 
@@ -516,7 +768,8 @@ def login():
     if request.method == 'GET':
         # If the current user is a guest, clear that so the modal will appear
         user = session.get("user") or {}
-        if user.get("type") == "guest":
+        roles = user.get("roles") or []
+        if "guest" in roles:
             session.pop("user", None)
         next_url = request.args.get("next") or url_for('run')
         return redirect(next_url)
@@ -528,7 +781,7 @@ def login():
 
     # Allow users to continue as a guest
     if action == "guest":
-        session['user'] = {"type": "guest"}
+        session['user'] = {"roles": ["guest"]}
         return redirect(next_url)
 
     # Normal login flow
@@ -553,11 +806,12 @@ def login():
                 error = "Invalid username or password."
             else:
                 # Successful login
+                roles = parse_roles(getattr(user, "usertype", None)) or ["customer"]
                 session['user'] = {
                     "id": str(getattr(user, "id", "")),
                     "name": getattr(user, "firstname", "") or "",
                     "email": email,
-                    "type": getattr(user, "usertype", "") or "customer",
+                    "roles": roles,
                 }
                 # If there was a guest cart, normalize its items to remove TTL
                 cart_id = session.get("cart_id")
@@ -587,7 +841,22 @@ def logout():
     if cart_id:
         db = DBInterface()
         try:
+            # Capture the items currently in this cart so we can potentially
+            # release them back to "available" status after clearing.
+            cart_rows = db.get_cart_items(cart_id)
+            item_ids = {str(row.item_id) for row in cart_rows}
+
+            # Clear all items from this cart
             db.clear_cart(cart_id)
+
+            # For each item that is no longer present in any cart at all,
+            # mark it available again (mirrors the explicit remove behavior).
+            items_to_mark_available = []
+            for item_id in item_ids:
+                if not db.item_is_in_any_cart(item_id):
+                    items_to_mark_available.append(item_id)
+            if items_to_mark_available:
+                db.mark_items_available('inventory', items_to_mark_available)
         finally:
             db.shutdown()
         session.pop('cart_id', None)
@@ -798,7 +1067,7 @@ def paypal_capture_order():
             "status": status,
             "redirect_url": url_for('checkout_complete'),
         }
-    )
+                           )
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

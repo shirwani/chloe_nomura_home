@@ -30,7 +30,7 @@
                     {% endif %}
                 </div>
             </div>
-            {% if user_type == 'admin' %}
+            {% if user_is_admin %}
             <div>
                 <a href="{{ url_for('add_product') }}" class="btn btn-primary">
                     Add Item

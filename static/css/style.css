@@ -100,6 +100,7 @@ img {
 .cart-table tbody tr td {
   border: none;
   box-shadow: none;
+  border-radius: 0px; /* no rounded corners for cart table */
 }
 
 .inventory-card {
@@ -292,12 +293,12 @@ img {
   display: inline-flex;
   align-items: center;
   margin-left: 20px;
-  max-width: 400px;
+  max-width: 300px; /* 25% narrower than 400px */
 }
 
 .top-nav-search .form-control {
   height: 28px;
-  width: 400px;
+  width: 300px; /* 25% narrower than 400px */
 }
 
 .top-nav-search .btn-default {
