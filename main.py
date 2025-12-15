@@ -90,7 +90,7 @@ def redirect_anonymous_to_home():
     """
     # Allow these endpoints without redirect
     if request.endpoint in (
-        "run",
+        "home",
         "login",
         "signup",
         "forgot_password",
@@ -106,11 +106,14 @@ def redirect_anonymous_to_home():
 
     # If user is not in session, force them back to home
     if "user" not in session:
-        return redirect(url_for("run"))
-
+        return redirect(url_for("home"))
 
 @app.route('/', methods=['GET', 'POST'])
 def run():
+    return redirect(url_for("home"))    
+
+@app.route('/home', methods=['GET', 'POST'])
+def home():
     return render_template(
         "index.html",
                            image_path='./static/images',
@@ -528,7 +531,7 @@ def forgot_password():
                     new_hash = hash_user_password(email, phone, password)
                     db.update_user(str(user.id), {"password": new_hash})
                     # After successful reset, send user back to home with login dialog
-                    return redirect(url_for("run"))
+                    return redirect(url_for("home"))
             finally:
                 db.shutdown()
 
@@ -573,7 +576,7 @@ def forgot_password_send_link():
         session['login_forgot_mode'] = True
 
     # Redirect back to home; the login modal will show with the message.
-    return redirect(url_for("run"))
+    return redirect(url_for("home"))
 
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
@@ -619,7 +622,7 @@ def reset_password(token):
                         db.update_user(str(user.id), {"password": new_hash})
                         db.delete_password_reset_token(token)
                         # After successful reset, send user back to home with login dialog
-                        return redirect(url_for("run"))
+                        return redirect(url_for("home"))
     finally:
         db.shutdown()
 
@@ -771,13 +774,13 @@ def login():
         roles = user.get("roles") or []
         if "guest" in roles:
             session.pop("user", None)
-        next_url = request.args.get("next") or url_for('run')
+        next_url = request.args.get("next") or url_for('home')
         return redirect(next_url)
 
     # POST: handle login or guest actions, always redirect back
     error = None
     action = request.form.get("action", "login")
-    next_url = request.form.get("next") or request.args.get("next") or url_for('run')
+    next_url = request.form.get("next") or request.args.get("next") or url_for('home')
 
     # Allow users to continue as a guest
     if action == "guest":
@@ -862,7 +865,7 @@ def logout():
         session.pop('cart_id', None)
 
     session.pop('user', None)
-    return redirect(url_for('run'))
+    return redirect(url_for('home'))
 
 
 @app.route('/cart', methods=['GET'])
