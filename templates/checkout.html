@@ -48,24 +48,29 @@
                 </div>
             </div>
 
-            <div class="col-sm-5">
+            <div class="col-sm-6">
                 <div class="product-card">
-                    <h2 class="product-title">Payment & Terms</h2>
-
-                    <p><strong>Payment methods accepted:</strong></p>
-                    <ul>
-                        <li>
-                            PayPal Checkout (recommended):<br>
-                            <div id="paypal-button-container"></div>
-                        </li>
-                    </ul>
-
+                    <h2 class="product-title">Important Terms & Payment</h2>
                     <p><strong>Important terms:</strong></p>
                     <ul>
                         <li>We <strong>do not offer shipping</strong>. All pieces are <strong>local pickup only</strong>.</li>
                         <li>When you complete payment via PayPal Checkout, we will <strong>hold the piece under your name</strong> for pickup.</li>
                         <li>Once payment is made, we will <strong>mark the item as Pending</strong> (on hold) and it will no longer be available to other buyers.</li>
                     </ul>
+
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" id="terms-checkbox">
+                            I have read and agree to the Important Terms above.
+                        </label>
+                    </div>
+                    <br/>
+                    <div id="payment-section" style="display: none;">
+                    <hr/>
+                    <p><strong>Payment methods accepted:</strong></p>
+                        <br/>
+                        PayPal Checkout (recommended):<br>
+                        <div id="paypal-button-container"></div>
                 </div>
             </div>
         </div>
@@ -74,6 +79,30 @@
     <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
     <script>
         paypal.Buttons({
+            onInit: function (data, actions) {
+                // Start with payment options disabled until terms are accepted
+                actions.disable();
+                var termsCheckbox = document.getElementById("terms-checkbox");
+                var paymentSection = document.getElementById("payment-section");
+                if (paymentSection) {
+                    paymentSection.style.display = "none";
+                }
+                if (termsCheckbox) {
+                    termsCheckbox.addEventListener("change", function (event) {
+                        if (event.target.checked) {
+                            actions.enable();
+                            if (paymentSection) {
+                                paymentSection.style.display = "block";
+                            }
+                        } else {
+                            actions.disable();
+                            if (paymentSection) {
+                                paymentSection.style.display = "none";
+                            }
+                        }
+                    });
+                }
+            },
             createOrder: function (data, actions) {
                 return fetch("{{ url_for('paypal_create_order') }}", {
                     method: "post",

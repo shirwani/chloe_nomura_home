@@ -23,7 +23,7 @@
                 <button type="submit" class="btn btn-primary">
                     Add to Cart
                 </button>
-            </form
+            </form>
             {% endif %}
         </div>
 
@@ -76,6 +76,7 @@
                     <div class="product-description">{{ item.description|trim }}</div>
                     <hr>
                     <div class="product-meta">
+                        <div><strong>Item ID:</strong> {{ item.id }}</div>
                         <div><strong>Created:</strong> {{ created_display }}</div>
                         <div><strong>Last Updated:</strong> {{ updated_display }}</div>
                     </div>

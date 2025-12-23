@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, url_for, jsonify, abort, redirect, session
 from database import DBInterface, parse_roles
+from inventory_search import InventorySearch
 from types import SimpleNamespace
 from datetime import datetime, timedelta
 import hashlib
@@ -59,13 +60,6 @@ def inject_globals():
     is_guest = "guest" in roles
     is_admin = "admin" in roles
 
-    if user_first_name:
-        cart_label = f"{user_first_name}'s cart:"
-    elif is_guest:
-        cart_label = "Your cart:"
-    else:
-        cart_label = None
-
     login_error = session.pop("login_error", None)
     login_forgot_mode = session.pop("login_forgot_mode", False)
 
@@ -75,7 +69,6 @@ def inject_globals():
         "user_roles": roles,
         "user_is_admin": is_admin,
         "user_is_guest": is_guest,
-        "cart_label": cart_label,
         "login_error": login_error,
         "login_forgot_mode": login_forgot_mode,
     }
@@ -244,8 +237,7 @@ def get_inventory():
     per_page = 15
 
     db = DBInterface()
-    data = db.get_all_data('inventory')
-    items = list(data)
+    items = []
 
     # Determine which items are currently in this user's cart
     cart_item_ids = set()
@@ -255,21 +247,16 @@ def get_inventory():
         cart_item_ids = {str(row.item_id) for row in cart_rows}
 
     if query:
-        q_tokens = text_to_normalized_tokens(query)
-        filtered = []
-        for item in items:
-            name = getattr(item, "name", "") or ""
-            desc = getattr(item, "description", "") or ""
-            item_tokens = text_to_normalized_tokens(name + " " + desc)
-
-            # Exact token match (after normalization)
-            exact_hit = bool(q_tokens & item_tokens)
-            # Fuzzy match on tokens to catch minor spelling/inflection differences
-            fuzzy_hit = tokens_fuzzy_match(q_tokens, item_tokens, threshold=80)
-
-            if exact_hit or fuzzy_hit:
-                filtered.append(item)
-        items = filtered
+        # Use enhanced keyword + semantic search over inventory
+        searcher = InventorySearch()
+        try:
+            search_results = searcher.search(query, top_k=None)
+            items = [r["item"] for r in search_results]
+        finally:
+            searcher.db.shutdown()
+    else:
+        data = db.get_all_data('inventory')
+        items = list(data)
 
     total_items = len(items)
     if total_items == 0:
@@ -701,6 +688,98 @@ def admin_users():
     )
 
 
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    """
+    Profile page for logged-in (non-guest) users to update their own basic info.
+    """
+    session_user = session.get("user") or {}
+    roles = session_user.get("roles") or []
+    # Guests and anonymous users should not access profile
+    if not session_user or "guest" in roles:
+        abort(403)
+
+    user_id = session_user.get("id")
+    if not user_id:
+        abort(403)
+
+    db = DBInterface()
+    error = None
+    success = None
+
+    try:
+        user = db.get_user_by_id(str(user_id))
+        if not user:
+            abort(404)
+
+        if request.method == "POST":
+            first_name = (request.form.get("first_name") or "").strip()
+            last_name = (request.form.get("last_name") or "").strip()
+            phone = (request.form.get("phone") or "").strip()
+
+            if not first_name or not last_name:
+                error = "First and last name are required."
+            else:
+                update_data = {
+                    "firstname": first_name,
+                    "lastname": last_name,
+                    "phone": phone or None,
+                }
+                db.update_user(str(user.id), update_data)
+                success = "Your profile has been updated."
+                # Refresh user from DB and keep session in sync
+                user = db.get_user_by_id(str(user.id))
+                session["user"]["name"] = getattr(user, "firstname", "") or ""
+    finally:
+        db.shutdown()
+
+    # Include any one-time success message from password link flow
+    flash_success = session.pop("profile_success", None)
+    if flash_success and not success:
+        success = flash_success
+
+    return render_template(
+        "profile.html",
+        user=user,
+        error=error,
+        success=success,
+    )
+
+
+@app.route('/profile/send-password-link', methods=['POST'])
+def profile_send_password_link():
+    """
+    Send the logged-in user an email with a link to change their password.
+    """
+    session_user = session.get("user") or {}
+    roles = session_user.get("roles") or []
+    if not session_user or "guest" in roles:
+        abort(403)
+
+    user_id = session_user.get("id")
+    if not user_id:
+        abort(403)
+
+    db = DBInterface()
+    try:
+        user = db.get_user_by_id(str(user_id))
+        if user:
+            email = (getattr(user, "email", "") or "").strip().lower()
+            if email:
+                token = uuid.uuid4().hex
+                expires_at = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+                db.create_password_reset_token(str(user.id), token, expires_at)
+
+                reset_url = url_for("reset_password", token=token, _external=True)
+                send_password_reset_email(email, reset_url)
+    finally:
+        db.shutdown()
+
+    session["profile_success"] = (
+        "If an account with your email exists, we've emailed a link to change your password."
+    )
+    return redirect(url_for("profile"))
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     """
@@ -717,7 +796,9 @@ def signup():
             session['user'] = {
                 "roles": ["guest"],
             }
-            return redirect(url_for('get_inventory'))
+            # After choosing to continue as guest from the signup page,
+            # send the user to the home page where they can browse.
+            return redirect(url_for('home'))
 
         # Handle full sign-up
         first_name = (request.form.get("first_name") or "").strip()
@@ -984,7 +1065,8 @@ def _get_paypal_access_token():
 @app.route('/api/paypal/create-order', methods=['POST'])
 def paypal_create_order():
     """Create a PayPal order for the current cart."""
-    items = []
+    cart_items = []
+    paypal_items = []
     total = 0.0
     cart_id = session.get('cart_id')
 
@@ -995,16 +1077,29 @@ def paypal_create_order():
             for row in cart_rows:
                 item = db.get_item_by_id('inventory', str(row.item_id))
                 if item is not None:
-                    items.append(item)
+                    cart_items.append(item)
                     try:
                         qty = row.quantity or 1
-                        total += float(item.price) * qty
+                        price = float(getattr(item, "price", 0) or 0)
+                        total += price * qty
+                        paypal_items.append(
+                            {
+                                "name": getattr(item, "name", "") or f"Item {item.id}",
+                                "sku": str(getattr(item, "id", "") or ""),
+                                "unit_amount": {
+                                    "currency_code": "USD",
+                                    "value": f"{price:.2f}",
+                                },
+                                "quantity": str(qty),
+                            }
+                        )
                     except Exception:
-                        pass
+                        # If anything goes wrong computing a line item, skip that item
+                        continue
         finally:
             db.shutdown()
 
-    if not items or total <= 0:
+    if not cart_items or total <= 0:
         return jsonify({"error": "Cart is empty or total is invalid."}), 400
 
     access_token = _get_paypal_access_token()
@@ -1021,6 +1116,8 @@ def paypal_create_order():
                     "value": f"{total:.2f}",
                 },
                 "description": "Chloe Nomura Home furniture order",
+                # Expose individual line items so item IDs (sku) appear in PayPal
+                "items": paypal_items,
             }
         ]
     }
@@ -1074,4 +1171,4 @@ def paypal_capture_order():
                            )
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5007)

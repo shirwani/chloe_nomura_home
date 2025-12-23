@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Your Profile – Chloe Nomura Home Furnishing</title>
+</head>
+<body class="product-page">
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="product-card" style="margin-top: 30px;">
+            <h1 class="product-title">Your Profile</h1>
+            <p class="product-description">
+                Update your contact details used for orders and communication.
+            </p>
+
+            {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            {% if success %}
+            <div class="alert alert-success">
+                {{ success }}
+            </div>
+            {% endif %}
+
+            <form method="post" class="profile-form">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label for="first_name">First Name</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="first_name"
+                                   name="first_name"
+                                   value="{{ (request.form.get('first_name') if request.method == 'POST' else (user.firstname or '')) }}"
+                                   required>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label for="last_name">Last Name</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="last_name"
+                                   name="last_name"
+                                   value="{{ (request.form.get('last_name') if request.method == 'POST' else (user.lastname or '')) }}"
+                                   required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email"
+                           class="form-control"
+                           id="email"
+                           name="email"
+                           value="{{ user.email or '' }}"
+                           disabled>
+                    <p class="help-block">
+                        To change your email address, please contact the site administrator.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone (optional)</label>
+                    <input type="text"
+                           class="form-control"
+                           id="phone"
+                           name="phone"
+                           value="{{ (request.form.get('phone') if request.method == 'POST' else (user.phone or '')) }}">
+                </div>
+
+                <div class="form-group" style="margin-top: 15px;">
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+

@@ -12,7 +12,7 @@
 
     <div class="container">
         <div class="product-card" style="margin-top: 30px;">
-            <h1 class="product-title">Thank You for Reaching Out</h1>
+            <h1 class="product-title">Thank You for Reaching Out!</h1>
             <p class="product-description">
                 Your message has been sent successfully. We will review it and get back to you as soon as possible.
             </p>
@@ -21,25 +21,10 @@
 
             <h3 class="product-title">Prefer to talk?</h3>
             <p class="product-description">
-                You can also contact us by phone at
-                {% if contact_phone %}
-                    <strong><a href="tel:{{ contact_phone }}">{{ contact_phone }}</a></strong>.
-                {% else %}
-                    <strong>(phone number unavailable)</strong>.
-                {% endif %}
+                You can also contact us by phone at <strong>{{ contact_phone }}</strong>
             </p>
-
-            <p class="product-description">
-                Or email us directly at
-                {% if contact_email %}
-                    <strong><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></strong>.
-                {% else %}
-                    <strong>our contact address</strong>.
-                {% endif %}
-            </p>
-
             <a href="{{ url_for('get_inventory') }}" class="btn btn-primary" style="margin-top: 10px;">
-                Back to Inventory
+                Go to Inventory
             </a>
         </div>
     </div>

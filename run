@@ -2,7 +2,11 @@
 # Update ../linode-flask-nginx-setup/sites
 
 # Create python venv in project directory
-python -m venv venv
+# python -m venv venv
+
+# Export environment variables from secrets/export_secrets_to_environment
+source secrets/export_secrets_to_environment
+
 
 # To launch python venv
 source venv/bin/activate
@@ -14,4 +18,5 @@ pip install -r requirements.txt
 
 # Run Flask app using gunicorn
 # nohup python main.py &
-nohup gunicorn -b 127.0.0.1:5001 main:app > /dev/null 2>&1 &
+pkill -f chloe_nomura_home
+nohup gunicorn -b 127.0.0.1:5007 main:app > /dev/null 2>&1 &
