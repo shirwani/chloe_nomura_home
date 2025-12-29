@@ -81,12 +81,14 @@ class InventorySearch:
     @staticmethod
     def _item_text(item) -> str:
         """
-        Build a text representation for an item using its id, name, and description.
+        Build a text representation for an item using its id, name, description,
+        and category so that all of these fields can be searched.
         """
         item_id = str(getattr(item, "id", "") or "")
         name = getattr(item, "name", "") or ""
         desc = getattr(item, "description", "") or ""
-        return " ".join(part for part in [item_id, name, desc] if part).strip()
+        category = getattr(item, "category", "") or ""
+        return " ".join(part for part in [item_id, name, desc, category] if part).strip()
 
     @staticmethod
     def _fuzzy_token_score(query_tokens: set, item_tokens: set) -> float:
@@ -134,6 +136,13 @@ class InventorySearch:
         item_texts: List[str] = [self._item_text(item) for item in items]
         query_tokens = self._normalize_tokens(query)
         item_tokens_list = [self._normalize_tokens(text) for text in item_texts]
+        # Also keep category tokens separately so we can weight category matches higher
+        category_texts: List[str] = [
+            str(getattr(item, "category", "") or "") for item in items
+        ]
+        category_tokens_list = [
+            self._normalize_tokens(text) for text in category_texts
+        ]
 
         # Get embeddings for the query and all item texts in a single API call
         inputs = [query] + item_texts
@@ -147,7 +156,9 @@ class InventorySearch:
         item_vecs = vectors[1:]
 
         results: List[Dict[str, Any]] = []
-        for item, item_vec, item_tokens in zip(items, item_vecs, item_tokens_list):
+        for item, item_vec, item_tokens, category_tokens in zip(
+            items, item_vecs, item_tokens_list, category_tokens_list
+        ):
             semantic_score = self._cosine_similarity(query_vec, item_vec)
             exact_keyword_score = (
                 float(len(query_tokens & item_tokens)) / float(len(query_tokens))
@@ -158,8 +169,24 @@ class InventorySearch:
             # Use the stronger of exact token overlap or fuzzy match as the keyword score
             keyword_score = max(exact_keyword_score, fuzzy_keyword_score)
 
-            # Weight semantic match more heavily than keyword/fuzzy overlap
-            combined_score = 0.7 * semantic_score + 0.3 * keyword_score
+            # Compute a separate category score (exact + fuzzy) so we can weight it more
+            exact_category_score = (
+                float(len(query_tokens & category_tokens)) / float(len(query_tokens))
+                if query_tokens
+                else 0.0
+            )
+            fuzzy_category_score = self._fuzzy_token_score(
+                query_tokens, category_tokens
+            )
+            category_score = max(exact_category_score, fuzzy_category_score)
+
+            # Weight category matches more heavily, but still factor in overall semantics
+            # and general keyword matches.
+            combined_score = (
+                0.5 * semantic_score
+                + 0.2 * keyword_score
+                + 0.3 * category_score
+            )
 
             # Only keep results that meet a minimum relevance threshold
             if combined_score > 0.3:

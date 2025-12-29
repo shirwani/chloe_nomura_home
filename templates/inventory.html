@@ -49,7 +49,7 @@
 
                         <td class="inventory-card">
                             <a href="{{ url_for('product_detail', item_id=item.id) }}">
-                                <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
+                                <img src="{{ item.image_url }}"
                                      alt="{{ item.name }}"
                                      class="thumbnail-image">
                             </a>
@@ -113,6 +113,8 @@
         </nav>
         {% endif %}
     </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </body>
 </html>
 

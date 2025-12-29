@@ -28,7 +28,7 @@
                             <li class="list-group-item">
                                 <div class="row">
                                     <div class="col-xs-3">
-                                        <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
+                                        <img src="{{ item.image_url }}"
                                              alt="{{ item.name }}"
                                              class="thumbnail-image">
                                     </div>
@@ -75,32 +75,35 @@
             </div>
         </div>
     </div>
+    {% include 'footer.html' %}
     {% if total > 0 and paypal_client_id %}
     <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
     <script>
         paypal.Buttons({
             onInit: function (data, actions) {
-                // Start with payment options disabled until terms are accepted
-                actions.disable();
+                // Toggle payment visibility and button enablement based on terms checkbox
                 var termsCheckbox = document.getElementById("terms-checkbox");
                 var paymentSection = document.getElementById("payment-section");
-                if (paymentSection) {
-                    paymentSection.style.display = "none";
+
+                function updatePaymentVisibility() {
+                    if (!termsCheckbox || !paymentSection) {
+                        return;
+                    }
+                    if (termsCheckbox.checked) {
+                        actions.enable();
+                        paymentSection.style.display = "block";
+                    } else {
+                        actions.disable();
+                        paymentSection.style.display = "none";
+                    }
                 }
+
+                // Initialize state on load
+                updatePaymentVisibility();
+
+                // React to user toggling the checkbox
                 if (termsCheckbox) {
-                    termsCheckbox.addEventListener("change", function (event) {
-                        if (event.target.checked) {
-                            actions.enable();
-                            if (paymentSection) {
-                                paymentSection.style.display = "block";
-                            }
-                        } else {
-                            actions.disable();
-                            if (paymentSection) {
-                                paymentSection.style.display = "none";
-                            }
-                        }
-                    });
+                    termsCheckbox.addEventListener("change", updatePaymentVisibility);
                 }
             },
             createOrder: function (data, actions) {

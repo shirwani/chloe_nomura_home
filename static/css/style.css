@@ -103,6 +103,11 @@ img {
   border-radius: 0px; /* no rounded corners for cart table */
 }
 
+.cart-table table {
+  width: 50%;
+  margin: 0 auto;
+}
+
 .inventory-card {
   width: 20%;
   max-width: 20%;
@@ -170,8 +175,47 @@ img {
 }
 
 .cart-thumbnail {
-  width: 80px;
+  width: 120px;
   height: auto;
+}
+
+.cart-item-cell {
+  border: none;
+}
+
+.cart-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cart-item-image {
+  flex: 0 0 auto;
+}
+
+.cart-item-info {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.cart-item-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-item-title a {
+  font-weight: 500;
+}
+
+.cart-item-price {
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.cart-item-remove {
+  margin-top: 0;
 }
 
 .back-link {
@@ -246,6 +290,58 @@ img {
   color: #777;
 }
 
+.related-items-section {
+  margin-top: 32px;
+}
+
+.related-items-title {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.related-items-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.related-item-card {
+  flex: 0 0 160px;
+  display: block;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+  color: inherit;
+}
+
+.related-item-image-wrapper {
+  background: #f7f7f9;
+  border-radius: 4px;
+  padding: 4px;
+  margin-bottom: 6px;
+}
+
+.related-item-image {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.related-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.related-item-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c7a3f;
+}
+
 /* Top navigation bar */
 .top-nav {
   background: #006d77; /* peacock blue */
@@ -278,6 +374,15 @@ img {
   color: #ffffff !important;
 }
 
+.top-nav-left .nav-link-disabled,
+.top-nav-right .nav-link-disabled {
+  margin-right: 15px;
+  font-weight: 500;
+  color: #ffffff;
+  opacity: 0.7;
+  cursor: default;
+}
+
 .nav-hamburger {
   margin-right: 10px;
   color: #ffffff;
@@ -308,14 +413,30 @@ img {
   box-shadow: none;
 }
 
+.nav-cart {
+  position: relative;
+  padding-right: 4px;
+}
+
 .top-nav-right .nav-cart .glyphicon {
-  margin-right: 4px;
+  margin-right: 0;
   color: #ffffff;
+  font-size: 22px;
 }
 
 .top-nav-right .cart-count {
-  font-weight: 600;
-  color: #ffffff;
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background-color: #ffcc00;
+  color: #004f57;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
 }
 
 .nav-user {

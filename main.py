@@ -236,6 +236,9 @@ def get_inventory():
     page = request.args.get('page', default=1, type=int)
     per_page = 15
 
+    # Selected categories from the filter menu (can be multiple)
+    selected_categories = [c for c in request.args.getlist("category") if c]
+
     db = DBInterface()
     items = []
 
@@ -257,6 +260,14 @@ def get_inventory():
     else:
         data = db.get_all_data('inventory')
         items = list(data)
+
+    # Apply category filter if any categories were selected
+    if selected_categories:
+        normalized_selected = set(selected_categories)
+        def item_in_selected_category(it):
+            cat = getattr(it, "category", None) or "Other"
+            return cat in normalized_selected
+        items = [it for it in items if item_in_selected_category(it)]
 
     total_items = len(items)
     if total_items == 0:
@@ -300,6 +311,18 @@ def product_detail(item_id):
         abort(404)
     # Load any additional images for this item; fall back to primary image_url
     images = db.get_images_for_item(item_id)
+    # Find up to 10 other items in the same category (if any), excluding this item
+    related_items = []
+    category = getattr(item, "category", None)
+    if category:
+        all_items = db.get_all_data('inventory')
+        for other in all_items:
+            if str(getattr(other, "id", "")) == str(item.id):
+                continue
+            if getattr(other, "category", None) == category:
+                related_items.append(other)
+            if len(related_items) >= 10:
+                break
     db.shutdown()
     if not images:
         images = [item.image_url] if getattr(item, "image_url", None) else []
@@ -326,6 +349,7 @@ def product_detail(item_id):
         in_cart=in_cart,
         created_display=created_display,
         updated_display=updated_display,
+        related_items=related_items,
     )
 
 

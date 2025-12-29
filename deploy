@@ -13,10 +13,10 @@
 #scp ./run                          root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/.
 
 # Changes frequently
-#scp -r ./static/js/*               root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/static/js/.
-#scp -r ./static/css/*              root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/static/css/.
-scp -r ./templates/*               root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/templates/.
 scp -r ./*.py                      root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/.
+scp -r ./static/js/*               root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/static/js/.
+scp -r ./static/css/*              root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/static/css/.
+scp -r ./templates/*               root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/templates/.
 
 #scp ./templates/header.html        root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/templates/.
 #scp ./main.py                      root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/.

@@ -34,7 +34,7 @@
                         <div class="carousel-inner" role="listbox">
                             {% for img in images %}
                             <div class="item {% if loop.first %}active{% endif %}">
-                                <img src="{{ url_for('static', filename=img|replace('static/', '')|replace('./', '')) }}"
+                                <img src="{{ img }}"
                                      alt="{{ item.name }} image {{ loop.index }}"
                                      class="product-image img-responsive">
                             </div>
@@ -77,12 +77,39 @@
                     <hr>
                     <div class="product-meta">
                         <div><strong>Item ID:</strong> {{ item.id }}</div>
+                        <div><strong>Category:</strong> {{ item.category or 'Other' }}</div>
                         <div><strong>Created:</strong> {{ created_display }}</div>
                         <div><strong>Last Updated:</strong> {{ updated_display }}</div>
                     </div>
                 </div>
             </div>
         </div>
+        {% if related_items %}
+        <div class="related-items-section">
+            <h3 class="related-items-title">
+                More in {{ item.category or 'this collection' }}
+            </h3>
+            <div class="related-items-scroll">
+                {% for r in related_items %}
+                <a href="{{ url_for('product_detail', item_id=r.id) }}" class="related-item-card">
+                    <div class="related-item-image-wrapper">
+                        {% if r.image_url %}
+                        <img src="{{ r.image_url }}"
+                             alt="{{ r.name }}"
+                             class="related-item-image img-responsive">
+                        {% endif %}
+                    </div>
+                    <div class="related-item-name">
+                        {{ r.name }}
+                    </div>
+                    <div class="related-item-price">
+                        ${{ "%.2f"|format(r.price) }}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>

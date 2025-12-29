@@ -14,9 +14,9 @@ def seed_database():
             "description": """Gorgeous set of nightstands in black with bronze pulls.
 Perfect beside a bed or sofa. Dimensions: 24 x 18 x 30. Local pickup in Tyngsboro, MA.""",
             "images": [
-                "./static/images/black_nightstands_scene1.png",
-                "./static/images/black_nightstands_scene2.png",
-                "./static/images/black_nightstands_scene3.png",
+                "./static/_images/black_nightstands_scene1.jpg",
+                "./static/_images/black_nightstands_scene2.jpg",
+                "./static/_images/black_nightstands_scene3.jpg",
             ],
         },
         {
@@ -25,9 +25,9 @@ Perfect beside a bed or sofa. Dimensions: 24 x 18 x 30. Local pickup in Tyngsbor
             "description": """Solid walnut side table with tapered legs and lower shelf.
 Perfect next to a reading chair or sofa.""",
             "images": [
-                "./static/images/walnut_side_table_scene1.png",
-                "./static/images/walnut_side_table_scene2.png",
-                "./static/images/walnut_side_table_scene3.png",
+                "./static/_images/walnut_side_table_scene1.jpg",
+                "./static/_images/walnut_side_table_scene2.jpg",
+                "./static/_images/walnut_side_table_scene3.jpg",
             ],
         },
         {
@@ -36,9 +36,9 @@ Perfect next to a reading chair or sofa.""",
             "description": """Low-profile rustic oak coffee table with chunky legs and smooth top.
 Beautiful centerpiece for a living room.""",
             "images": [
-                "./static/images/oak_coffee_table_scene1.png",
-                "./static/images/oak_coffee_table_scene2.png",
-                "./static/images/oak_coffee_table_scene3.png",
+                "./static/_images/oak_coffee_table_scene1.jpg",
+                "./static/_images/oak_coffee_table_scene2.jpg",
+                "./static/_images/oak_coffee_table_scene3.jpg",
             ],
         },
         {
@@ -47,9 +47,9 @@ Beautiful centerpiece for a living room.""",
             "description": """Long farmhouse console table with turned legs and lower shelf.
 Works great in entryways or behind a sofa.""",
             "images": [
-                "./static/images/farmhouse_console_scene1.png",
-                "./static/images/farmhouse_console_scene2.png",
-                "./static/images/farmhouse_console_scene3.png",
+                "./static/_images/farmhouse_console_scene1.jpg",
+                "./static/_images/farmhouse_console_scene2.jpg",
+                "./static/_images/farmhouse_console_scene3.jpg",
             ],
         },
         {
@@ -58,9 +58,9 @@ Works great in entryways or behind a sofa.""",
             "description": """Set of two solid wood spindle-back dining chairs in a warm honey finish.
 Comfortable and sturdy.""",
             "images": [
-                "./static/images/spindle_chairs_scene1.png",
-                "./static/images/spindle_chairs_scene2.png",
-                "./static/images/spindle_chairs_scene3.png",
+                "./static/_images/spindle_chairs_scene1.jpg",
+                "./static/_images/spindle_chairs_scene2.jpg",
+                "./static/_images/spindle_chairs_scene3.jpg",
             ],
         },
         {
@@ -69,9 +69,9 @@ Comfortable and sturdy.""",
             "description": """Whitewashed solid wood nightstand with single drawer and open shelf.
 Soft, coastal-inspired finish.""",
             "images": [
-                "./static/images/whitewashed_nightstand_scene1.png",
-                "./static/images/whitewashed_nightstand_scene2.png",
-                "./static/images/whitewashed_nightstand_scene3.png",
+                "./static/_images/whitewashed_nightstand_scene1.jpg",
+                "./static/_images/whitewashed_nightstand_scene2.jpg",
+                "./static/_images/whitewashed_nightstand_scene3.jpg",
             ],
         },
         {
@@ -80,9 +80,9 @@ Soft, coastal-inspired finish.""",
             "description": """Round pedestal side table in rich espresso stain.
 Great between two accent chairs or as a plant stand.""",
             "images": [
-                "./static/images/round_pedestal_table_scene1.png",
-                "./static/images/round_pedestal_table_scene2.png",
-                "./static/images/round_pedestal_table_scene3.png",
+                "./static/_images/round_pedestal_table_scene1.jpg",
+                "./static/_images/round_pedestal_table_scene2.jpg",
+                "./static/_images/round_pedestal_table_scene3.jpg",
             ],
         },
         {
@@ -91,9 +91,9 @@ Great between two accent chairs or as a plant stand.""",
             "description": """Reclaimed wood coffee table with visible grain and character.
 Metal base provides a modern industrial touch.""",
             "images": [
-                "./static/images/reclaimed_coffee_table_scene1.png",
-                "./static/images/reclaimed_coffee_table_scene2.png",
-                "./static/images/reclaimed_coffee_table_scene3.png",
+                "./static/_images/reclaimed_coffee_table_scene1.jpg",
+                "./static/_images/reclaimed_coffee_table_scene2.jpg",
+                "./static/_images/reclaimed_coffee_table_scene3.jpg",
             ],
         },
         {
@@ -102,9 +102,9 @@ Metal base provides a modern industrial touch.""",
             "description": """Slim solid wood console table ideal for narrow hallways.
 Includes two small drawers for keys and mail.""",
             "images": [
-                "./static/images/slim_console_scene1.png",
-                "./static/images/slim_console_scene2.png",
-                "./static/images/slim_console_scene3.png",
+                "./static/_images/slim_console_scene1.jpg",
+                "./static/_images/slim_console_scene2.jpg",
+                "./static/_images/slim_console_scene3.jpg",
             ],
         },
         {
@@ -113,9 +113,9 @@ Includes two small drawers for keys and mail.""",
             "description": """Set of four ladder-back dining chairs with woven rush seats.
 Classic farmhouse look with updated finish.""",
             "images": [
-                "./static/images/ladder_back_chairs_scene1.png",
-                "./static/images/ladder_back_chairs_scene2.png",
-                "./static/images/ladder_back_chairs_scene3.png",
+                "./static/_images/ladder_back_chairs_scene1.jpg",
+                "./static/_images/ladder_back_chairs_scene2.jpg",
+                "./static/_images/ladder_back_chairs_scene3.jpg",
             ],
         },
         {
@@ -124,9 +124,9 @@ Classic farmhouse look with updated finish.""",
             "description": """Two-tone coffee table with natural wood top and painted base.
 Lower shelf provides extra storage for baskets or books.""",
             "images": [
-                "./static/images/two_tone_coffee_table_scene1.png",
-                "./static/images/two_tone_coffee_table_scene2.png",
-                "./static/images/two_tone_coffee_table_scene3.png",
+                "./static/_images/two_tone_coffee_table_scene1.jpg",
+                "./static/_images/two_tone_coffee_table_scene2.jpg",
+                "./static/_images/two_tone_coffee_table_scene3.jpg",
             ],
         },
     ]

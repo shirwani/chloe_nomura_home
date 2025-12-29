@@ -26,25 +26,37 @@
                 <tbody>
                     {% for item in items %}
                     <tr>
-                        <td class="center">
-                            <a href="{{ url_for('product_detail', item_id=item.id) }}">
-                                <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
-                                     alt="{{ item.name }}"
-                                     class="thumbnail-image cart-thumbnail">
-                            </a>
-                        </td>
-                        <td class="inventory-name left">
-                            <a href="{{ url_for('product_detail', item_id=item.id) }}">
-                                {{ item.name }}
-                            </a>
-                        </td>
-                        <td class="inventory-price right">
-                            ${{ "%.2f"|format(item.price) }}
-                        </td>
-                        <td class="center">
-                            <form method="post" action="{{ url_for('remove_from_cart', item_id=item.id) }}">
-                                <button type="submit" class="btn btn-link text-danger">Remove</button>
-                            </form>
+                        <td class="cart-item-cell">
+                            <div class="cart-item-row">
+                                <div class="cart-item-image">
+                                    <a href="{{ url_for('product_detail', item_id=item.id) }}">
+                                        <img src="{{ item.image_url }}"
+                                             alt="{{ item.name }}"
+                                             class="thumbnail-image cart-thumbnail">
+                                    </a>
+                                </div>
+                                <div class="cart-item-info">
+                                    <div class="cart-item-main">
+                                        <div>
+                                            <div class="cart-item-title">
+                                                <a href="{{ url_for('product_detail', item_id=item.id) }}">
+                                                    {{ item.name }}
+                                                </a>
+                                            </div>
+                                            <div class="cart-item-price">
+                                                ${{ "%.2f"|format(item.price) }}
+                                            </div>
+                                        </div>
+                                        <div class="cart-item-remove">
+                                            <form method="post" action="{{ url_for('remove_from_cart', item_id=item.id) }}">
+                                                <button type="submit" class="btn btn-link text-danger">
+                                                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -64,6 +76,7 @@
         <p>Your cart is currently empty.</p>
         {% endif %}
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>
 

@@ -26,7 +26,7 @@
         <div class="row product-row">
             <div class="col-sm-6">
                 <div class="product-image-wrapper">
-                    <img src="{{ url_for('static', filename=item.image_url|replace('static/', '')|replace('./', '')) }}"
+                    <img src="{{ item.image_url }}"
                          alt="{{ item.name }}"
                          class="product-image img-responsive">
                 </div>
@@ -59,8 +59,7 @@
                             <label for="image_urls">All Image URLs (one per line)</label>
                             <textarea class="form-control" id="image_urls" name="image_urls" rows="4">{{ image_urls }}</textarea>
                             <p class="help-block">
-                                Each line should be a path relative to <code>/static</code> (for example
-                                <code>images/example.png</code> or <code>./static/images/example.png</code>).
+                                Each line should be a complete url for the image.
                                 The first URL will be treated as the primary image.
                             </p>
                         </div>
@@ -85,6 +84,7 @@
             </div>
         </div>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>
 

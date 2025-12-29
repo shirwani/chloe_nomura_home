@@ -1,22 +1,84 @@
 <div class="logo">
-    <img class="logo-icon" src="{{ url_for('static', filename='images/chloe_nomura_icon.png') }}" alt="Chloe profile image"/>
+    <img class="logo-icon" src="https://chloe-nomura-home.atl1.cdn.digitaloceanspaces.com/website-images/chloe_nomura_icon.jpg" alt="Chloe profile image"/>
     <span class="logo-text">Chloe Nomura Home Furnishing</span>
 </div>
 <div class="top-nav">
     <div class="container top-nav-inner">
         <div class="top-nav-left">
-            <button type="button" class="btn btn-link nav-hamburger">
-                <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>
-            </button>
+            {% set selected_categories = request.args.getlist('category') %}
+            <div class="dropdown">
+                {% if request.endpoint == 'get_inventory' %}
+                <button type="button"
+                        class="btn btn-link nav-hamburger dropdown-toggle"
+                        id="categoryFilterMenu"
+                        data-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false">
+                    <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>
+                </button>
+                <div class="dropdown-menu category-filter-menu" aria-labelledby="categoryFilterMenu">
+                    <form method="get" action="{{ url_for('get_inventory') }}" style="padding: 10px; min-width: 220px;">
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="category" value="Bedroom"
+                                       {% if 'Bedroom' in selected_categories %}checked{% endif %}>
+                                Bedroom
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="category" value="Living Room"
+                                       {% if 'Living Room' in selected_categories %}checked{% endif %}>
+                                Living Room
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="category" value="Study"
+                                       {% if 'Study' in selected_categories %}checked{% endif %}>
+                                Study
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="category" value="Other"
+                                       {% if 'Other' in selected_categories %}checked{% endif %}>
+                                Other
+                            </label>
+                        </div>
+                        <hr style="margin: 8px 0;">
+                        <input type="hidden" name="q" value="{{ request.args.get('q', '') }}">
+                        <button type="submit" class="btn btn-primary btn-block btn-sm">Apply Filter</button>
+                        <a href="{{ url_for('get_inventory') }}" class="btn btn-link btn-block btn-sm">Clear</a>
+                    </form>
+                </div>
+                {% else %}
+                <button type="button" class="btn btn-link nav-hamburger">
+                    <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>
+                </button>
+                {% endif %}
+            </div>
+            {% if request.endpoint == 'home' %}
+            <span class="btn btn-link nav-link-disabled" aria-current="page">Home</span>
+            {% else %}
             <a href="{{ url_for('home') }}" class="btn btn-link">Home</a>
+            {% endif %}
+            {% if request.endpoint == 'get_inventory' %}
+            <span class="btn btn-link nav-link-disabled" aria-current="page">Inventory</span>
+            {% else %}
             <a href="{{ url_for('get_inventory') }}" class="btn btn-link">Inventory</a>
+            {% endif %}
+            {% if request.endpoint == 'contact' %}
+            <span class="btn btn-link nav-link-disabled" aria-current="page">Contact</span>
+            {% else %}
             <a href="{{ url_for('contact') }}" class="btn btn-link">Contact</a>
+            {% endif %}
             <form class="top-nav-search" method="get" action="{{ url_for('get_inventory') }}">
                 <div class="input-group input-group-sm">
                     <input type="text"
                            class="form-control"
                            name="q"
-                           placeholder="Search by name, description, or item ID..."
+                           placeholder="Search by name, description, item ID, or category..."
                            value="{{ request.args.get('q', '') }}">
                     <span class="input-group-btn">
                         <button class="btn btn-default" type="submit">
@@ -28,14 +90,18 @@
         </div>
         <div class="top-nav-right">
             <a href="{{ url_for('view_cart') }}" class="btn btn-link nav-cart">
-                <span class="glyphicon glyphicon-shopping-cart"></span>
-                <span class="cart-count">{{ cart_count or 0 }}</span>
+                <span class="glyphicon glyphicon-shopping-cart" aria-hidden="true"></span>
+                {% if cart_count %}
+                <span class="cart-count">{{ cart_count }}</span>
+                {% endif %}
             </a>
             {% if user_first_name %}
                 {% if user_is_admin %}
                 <a href="{{ url_for('admin_users') }}" class="btn btn-link">Admin</a>
                 {% endif %}
-                <a href="{{ url_for('profile') }}" class="btn btn-link">Profile</a>
+                <a href="{{ url_for('profile') }}" class="btn btn-link">
+                    <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+                </a>
                 <a href="{{ url_for('logout') }}" class="btn btn-link">Logout</a>
             {% elif user_is_guest %}
             <a href="{{ url_for('login', next=request.path) }}" class="btn btn-link">Login</a>

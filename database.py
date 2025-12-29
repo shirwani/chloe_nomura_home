@@ -54,10 +54,12 @@ class DBInterface:
 
         # Ensure core tables exist
         self.create_inventory_table()
+        self._ensure_inventory_category_column()
         self.create_users_table()
         self._ensure_images_table()
         self._ensure_cart_items_table()
         self._ensure_password_reset_table()
+        self.backfill_inventory_categories()
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -110,6 +112,16 @@ class DBInterface:
             );
         """
         self._execute(query)
+
+    def _ensure_inventory_category_column(self):
+        """
+        Ensure the inventory table has a 'category' TEXT column.
+        """
+        cur = self._execute("PRAGMA table_info(inventory);")
+        columns = [row.name for row in cur.fetchall()]
+        if "category" not in columns:
+            # Add a nullable category column; we'll backfill values separately.
+            self._execute("ALTER TABLE inventory ADD COLUMN category TEXT;")
 
     def create_users_table(self):
         """
@@ -231,9 +243,13 @@ class DBInterface:
         item_id = str(uuid4())
         created_at = data.get("created_at") or datetime.now().isoformat()
         updated_at = data.get("updated_at") or created_at
+        # Derive a category if not explicitly provided
+        category = data.get("category") or self._infer_inventory_category(
+            data.get("name", ""), data.get("description", "")
+        )
         query = f"""
-            INSERT INTO {tablename} (id, name, price, description, image_url, created_at, updated_at, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO {tablename} (id, name, price, description, image_url, created_at, updated_at, status, category)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
         self._execute(
             query,
@@ -246,6 +262,7 @@ class DBInterface:
                 created_at,
                 updated_at,
                 data["status"],
+                category,
             ),
         )
         return item_id
@@ -330,6 +347,89 @@ class DBInterface:
         )
         return user_id
 
+    # ------------------------------------------------------------------
+    # Inventory category helpers
+    # ------------------------------------------------------------------
+
+    def _infer_inventory_category(self, name: str, description: str) -> str:
+        """
+        Infer a coarse category for an inventory item based on its name/description.
+
+        Categories:
+          - "Bedroom"
+          - "Living Room"
+          - "Study"
+          - "Other"
+        """
+        text = f"{name or ''} {description or ''}".lower()
+
+        bedroom_keywords = [
+            "nightstand",
+            "bedside",
+            "bed room",
+            "bedroom",
+            "dresser",
+            "chest",
+            "armoire",
+        ]
+        living_keywords = [
+            "sofa",
+            "couch",
+            "coffee table",
+            "side table",
+            "end table",
+            "console",
+            "console table",
+            "tv stand",
+            "media console",
+            "pedestal table",
+            "accent table",
+            "bench",
+            "stool",
+            "chair",
+            "recliner",
+        ]
+        study_keywords = [
+            "desk",
+            "writing desk",
+            "office",
+            "study",
+            "bookcase",
+            "bookshelf",
+        ]
+
+        def contains_any(keywords):
+            return any(k in text for k in keywords)
+
+        if contains_any(bedroom_keywords):
+            return "Bedroom"
+        if contains_any(living_keywords):
+            return "Living Room"
+        if contains_any(study_keywords):
+            return "Study"
+        return "Other"
+
+    def backfill_inventory_categories(self):
+        """
+        Populate the category column for existing inventory rows that lack it.
+        """
+        # Ensure the column exists before attempting to backfill
+        self._ensure_inventory_category_column()
+        cur = self._execute("SELECT id, name, description, category FROM inventory;")
+        rows = cur.fetchall()
+        for row in rows:
+            current = getattr(row, "category", None)
+            if current:
+                continue
+            category = self._infer_inventory_category(
+                getattr(row, "name", "") or "",
+                getattr(row, "description", "") or "",
+            )
+            self._execute(
+                "UPDATE inventory SET category = ? WHERE id = ?;",
+                (category, row.id),
+            )
+
     def update_user(self, user_id: str, data: dict):
         """
         Update fields for an existing user. The `data` dict may include any of:
@@ -359,6 +459,18 @@ class DBInterface:
         Update an existing item in the given table.
         """
         updated_at = datetime.now().isoformat()
+        # Preserve existing category unless explicitly provided; if not present,
+        # recompute based on the updated name/description.
+        existing = self.get_item_by_id(tablename, item_id)
+        current_category = getattr(existing, "category", None) if existing else None
+        new_category = data.get(
+            "category",
+            current_category
+            or self._infer_inventory_category(
+                data.get("name", getattr(existing, "name", "")),
+                data.get("description", getattr(existing, "description", "")),
+            ),
+        )
         query = f"""
             UPDATE {tablename}
             SET name = ?,
@@ -366,6 +478,7 @@ class DBInterface:
                 description = ?,
                 image_url = ?,
                 status = ?,
+                category = ?,
                 updated_at = ?
             WHERE id = ?;
         """
@@ -377,6 +490,7 @@ class DBInterface:
                 data["description"],
                 data["image_url"],
                 data["status"],
+                new_category,
                 updated_at,
                 item_id,
             ),
