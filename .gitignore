@@ -29,3 +29,7 @@ coverage.xml
 
 
 *.db
+*.ipynb
+
+
+
