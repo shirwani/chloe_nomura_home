@@ -24,7 +24,7 @@
             {% endif %}
 
             {% if success %}
-            <div class="alert alert-success">
+            <div class="alert alert-success profile-success-alert">
                 {{ success }}
             </div>
             {% endif %}
@@ -55,39 +55,118 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email"
-                           class="form-control"
-                           id="email"
-                           name="email"
-                           value="{{ user.email or '' }}"
-                           disabled>
-                    <p class="help-block">
-                        To change your email address, please contact the site administrator.
-                    </p>
-                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email"
+                                   class="form-control"
+                                   id="email"
+                                   name="email"
+                                   value="{{ user.email or '' }}"
+                                   disabled>
+                            <p class="help-block">
+                                To change your email address, please contact the site administrator.
+                            </p>
+                        </div>
+                    </div>
 
-                <div class="form-group">
-                    <label for="phone">Phone (optional)</label>
-                    <input type="text"
-                           class="form-control"
-                           id="phone"
-                           name="phone"
-                           value="{{ (request.form.get('phone') if request.method == 'POST' else (user.phone or '')) }}">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label for="phone">Phone (optional)</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="phone"
+                                   name="phone"
+                                   value="{{ (request.form.get('phone') if request.method == 'POST' else (user.phone or '')) }}">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group" style="margin-top: 15px;">
                     <button type="submit" class="btn btn-primary">
-                        Save Changes
+                        <span class="glyphicon glyphicon-floppy-disk"></span> Save Changes
                     </button>
                 </div>
             </form>
+        </div>
+
+        <div class="product-card" style="margin-top: 30px;">
+            <h2 class="product-title">Recent Orders</h2>
+
+            {% if recent_sales %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Order ID</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in recent_sales %}
+                        <tr>
+                            <td>{{ sale.date[:10] }}</td>
+                            <td>
+                                <a href="{{ url_for('order_detail', order_id=sale.sale_id) }}">
+                                    {{ sale.sale_id }}
+                                </a>
+                            </td>
+                            <td>${{ "%.2f"|format(sale.total) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <nav aria-label="Orders pages" class="text-center">
+                <ul class="pagination">
+                    {% if page > 1 %}
+                    <li>
+                        <a href="{{ url_for('profile', page=page-1) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo; Previous</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="disabled">
+                        <span>Page {{ page }} of {{ total_pages }}</span>
+                    </li>
+                    {% if page < total_pages %}
+                    <li>
+                        <a href="{{ url_for('profile', page=page+1) }}" aria-label="Next">
+                            <span aria-hidden="true">Next &raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% else %}
+            <div class="alert alert-info cart-empty-alert" role="alert">
+                You have no recorded sale orders yet.
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+      // When the profile is successfully updated, fade the success alert
+      // out completely over 5 seconds.
+      (function () {
+        var $ = window.jQuery;
+        if (!$) return;
+
+        $(function () {
+          var $alert = $(".profile-success-alert");
+          if ($alert.length) {
+            $alert.fadeOut(5000);
+          }
+        });
+      })();
+    </script>
+    {% include 'footer.html' %}
 </body>
 </html>
 

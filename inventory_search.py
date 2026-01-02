@@ -25,8 +25,10 @@ class InventorySearch:
 
     EMBEDDING_MODEL = "text-embedding-3-small"
 
-    def __init__(self, client: OpenAI | None = None):
-        self.db = DBInterface()
+    def __init__(self, db: DBInterface | None = None, client: OpenAI | None = None):
+        # Allow callers to provide a shared DBInterface (e.g., per-request),
+        # falling back to creating a new one when not supplied.
+        self.db = db or DBInterface()
         self.client = client or self._build_client()
 
     def _build_client(self) -> OpenAI:
@@ -183,8 +185,8 @@ class InventorySearch:
             # Weight category matches more heavily, but still factor in overall semantics
             # and general keyword matches.
             combined_score = (
-                0.5 * semantic_score
-                + 0.2 * keyword_score
+                0.3 * semantic_score
+                + 0.4 * keyword_score
                 + 0.3 * category_score
             )
 

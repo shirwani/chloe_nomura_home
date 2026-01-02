@@ -1,16 +1,22 @@
-ssh root@66-228-35-9.ip.linodeusercontent.com 'mkdir -p /var/www/flask-apps/chloe_nomura_home'
-ssh root@66-228-35-9.ip.linodeusercontent.com 'mkdir -p /var/www/flask-apps/chloe_nomura_home/static/js'
-ssh root@66-228-35-9.ip.linodeusercontent.com 'mkdir -p /var/www/flask-apps/chloe_nomura_home/static/css'
-ssh root@66-228-35-9.ip.linodeusercontent.com 'mkdir -p /var/www/flask-apps/chloe_nomura_home/static/images'
-ssh root@66-228-35-9.ip.linodeusercontent.com 'mkdir -p /var/www/flask-apps/chloe_nomura_home/secrets'
-ssh root@66-228-35-9.ip.linodeusercontent.com 'mkdir -p /var/www/flask-apps/chloe_nomura_home/templates'
+PAIR OF NIGHTSTANDS (WITH BASE IMAGES)
 
-scp -r ./static/js/*               root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/static/js/.
-scp -r ./static/css/*              root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/static/css/.
-scp -r ./static/images/*           root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/static/images/.
-scp -r ./secrets/*                 root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/secrets/.
-scp -r ./templates/*               root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/templates/.
+Imagine you are a seller on Facebook Marketplace. You have a pair of nightstands that you want to sell. Here is a picture containing both nightstands.
+Generate an image in jpg format that you can use to create a listing. The images should feature the nightstands staged for sale. 
+Use warm lighting for the image.
 
-scp -r ./chloe.db                  root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/.
-scp ./*.py                         root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/.
-scp ./requirements.txt             root@66-228-35-9.ip.linodeusercontent.com:/var/www/flask-apps/chloe_nomura_home/.
+The image should show one of the nightstands in a scene next to a bed, against a plain wall. The color of the wall and the beddings should 
+compliment the color of the nightstand.
+
+IMPORTANT: Do not change anything about the nightstands themselves. They should remain exactly the same - pixel by pixel. This is important so that the 
+images accurately represent the items for sale.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Generate a second image should show both nightstands side-by-side, against a wall with white wainscoting.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Generate a third image should be a zoomed-in image for one of the nightstands, especially showing the details on the knob.
+
+#######################################################################################################################################################
+

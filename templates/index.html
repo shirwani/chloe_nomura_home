@@ -9,77 +9,241 @@
     <script src="{{ js_path }}"></script>
     <link rel="stylesheet" href="{{ css_path }}">
     <title>Chloe Nomura Home</title>
-    <!-- Elegant, theme-appropriate typography for the home page -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lora:wght@400;500&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
-    <style>
-        #welcomeMessage {
-            font-style: italic;
-            font-weight: bold;
-        }
-
-        .page-header h1 {
-            font-family: 'Playfair Display', 'Georgia', serif;
-            font-weight: 600;
-            letter-spacing: 0.03em;
-            color: #333333;
-        }
-
-        .page-header p {
-            font-family: 'Georgia', 'Times New Roman', serif;
-            font-size: 16px;
-            line-height: 1.7;
-            color: #555555;
-            margin-top: 10px;
-        }
-
-        .page-header .signature {
-            font-family: 'Dancing Script', 'Brush Script MT', cursive;
-            font-size: 26px;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            margin-top: 18px;
-        }
-
-        /* Make the home-page jumbotron visually transparent */
-        .jumbotron {
-            background-color: transparent;
-            border: none;
-            box-shadow: none;
-        }
-    </style>
 </head>
 <body class="home-page">
     {% include 'header.html' %}
 
-    <div class="container">
-        <div class="page-header">
-           <h1>Welcome to Chloe Nomura Home!</h1>
-           <p>
-               I'm Chloe, an artist and home decorator with a love for giving beautiful, well-made pieces a second life.
-               Every item in my inventory is pre-loved but in good to great condition, and I personally hand-select each one
-               for its character, craftsmanship, and potential to transform a space.
-           </p>
-           <p>
-               Whether you're looking for a statement coffee table, a charming nightstand, or a one-of-a-kind accent piece,
-               my hope is that you'll find something here that feels like it was made for your home.
-               Take a look through the inventory and imagine how these pieces might tell a new story with you.
-           </p>
-           <p>
-               Some images are AI-generated for staging purposes, but the items are all real and in good condition. 
-               Wherever possible, I include real images of the items. Feel free to send me a message if 
-               you have any questions or would like to see more images.  
-           </p>
-           <p class="signature">
-               — Chloe Nomura
-           </p>
+    <div class="container home-hero-container">
+        <div class="row">
+            <div class="col-xs-12">
+                <table>
+                    <tr style="vertical-align: top; padding: 20px;">
+                        <td style="padding: 10px;">
+                            <table class="home-hero-cta-table" style="padding: 0px;">
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 0px;">
+                                            <div class="home-hero-heading" style="padding: 0px;">Find Your Inspiration</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0px;">
+                                            <a href="{{ url_for('get_inventory') }}?trending_only=1" class="btn btn-link"><button class="btn btn-default"> <span class="glyphicon glyphicon-fire" aria-hidden="true"></span> Trending Items</button></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0px;">
+                                            <a href="{{ url_for('get_inventory') }}?hot_only=1" class="btn btn-link"><button class="btn btn-default"> <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Popular Items</button></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0px;">
+                                            <a href="{{ url_for('get_inventory') }}?discount_only=1" class="btn btn-link"><button class="btn btn-default"> <span class="glyphicon glyphicon-tag" aria-hidden="true"></span> Discounted Items</button></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0px;">
+                                            <a href="{{ url_for('get_inventory') }}" class="btn btn-link"><button class="btn btn-default"> <span class="glyphicon glyphicon-th" aria-hidden="true"></span> Browse Inventory</button></a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                        <td style="padding: 20px;">
+                            <img
+                            src="https://chloe-nomura-home.atl1.cdn.digitaloceanspaces.com/website-images/home_page_collage_hero.jpg"
+                            alt="Chloe Nomura Home Furnishing"
+                            class="img-responsive center-block home-hero-image"
+                        >
+                        </td>
+                    </tr>   
+                    </tbody>
+                </table>
+                <hr/>
+                <div class="home-sustainability-blurb">
+                    <h2 class="home-sustainability-title">
+                        Give Great Furniture a Second Life
+                    </h2>
+                    <p class="home-sustainability-text">
+                        Decorating sustainably doesn't mean sacrificing style. When you choose pre-owned over brand new, you save trees,
+                        conserve energy, and keep perfectly good materials out of landfills. It’s the easiest way to make your home
+                        beautiful and your lifestyle eco-friendly. Find your next treasure and feel good about where it came from.
+                    </p>
+                </div>
+            </div>
         </div>
-
-        <div class="jumbotron">
-             <img width="500" src="https://chloe-nomura-home.atl1.cdn.digitaloceanspaces.com/website-images/chloe_hero_image.jpg" alt="Chloe Nomura Home hero image"/>
-            <span id="welcomeMessage"></span>
-        </div>
-        <hr/>
     </div>
+
+    {% if top_picks %}
+    <div class="container home-top-picks-container">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="related-items-section home-top-picks-section">
+                    <h3 class="related-items-title home-top-picks-heading">
+                        Our Top Picks
+                    </h3>
+                    <div class="related-items-wrapper">
+                        <button type="button"
+                                class="related-scroll-arrow related-scroll-arrow-left hidden"
+                                aria-label="Scroll top picks left">
+                            <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                        </button>
+                        <div class="related-items-scroll">
+                            {% for r in top_picks %}
+                            <div class="related-item-card">
+                                <div class="related-item-image-wrapper">
+                                    {% if r.image_url %}
+                                    <a href="{{ url_for('product_detail', item_id=r.id) }}">
+                                        <img src="{{ r.image_url }}"
+                                             alt="{{ r.name }}"
+                                             class="related-item-image img-responsive">
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                <div class="related-item-name">
+                                    <a href="{{ url_for('product_detail', item_id=r.id) }}">
+                                        {{ r.name }}
+                                    </a>
+                                </div>
+                                {% set r_has_discount = (r.original_price is not none) and (r.original_price > r.price) %}
+                                <div class="related-item-price">
+                                    {% if r_has_discount %}
+                                        <span class="related-price-original">
+                                            ${{ "%.2f"|format(r.original_price) }}
+                                        </span>
+                                        <span class="related-price-discount">
+                                            ${{ "%.2f"|format(r.price) }}
+                                        </span>
+                                    {% else %}
+                                        ${{ "%.2f"|format(r.price) }}
+                                    {% endif %}
+                                </div>
+                                {% if r.description %}
+                                <div class="inventory-description home-top-picks-description">
+                                    {{ r.description|trim|truncate(150, True, '…') }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button"
+                                class="related-scroll-arrow related-scroll-arrow-right hidden"
+                                aria-label="Scroll top picks right">
+                            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <br/><br/>
+    
+    {% if category_spotlights %}
+    <div class="container home-category-container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h2 class="home-category-heading">Shop by Category</h2>
+                <br/>
+                <div class="home-category-grid">
+                    {% for spotlight in category_spotlights %}
+                    {% set cat = spotlight.category %}
+                    {% set item = spotlight.item %}
+                    <a href="{{ url_for('get_inventory', category=cat) }}"
+                       class="home-category-card">
+                        <div class="home-category-image-wrapper">
+                            {% if item.image_url %}
+                            <img src="{{ item.image_url }}"
+                                 alt="{{ cat }}"
+                                 class="home-category-image img-responsive">
+                            {% endif %}
+                        </div>
+                        <div class="home-category-name">
+                            {{ cat }}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+      // Horizontal scroll arrows for the home page "Our Top Picks" section,
+      // mirroring the behavior used on the product detail related-items carousel.
+      (function() {
+        if (typeof window.jQuery === "undefined") {
+          return;
+        }
+        jQuery(function($) {
+          $(".home-top-picks-container .related-items-wrapper").each(function () {
+            var $wrapper = $(this);
+            var $scroll = $wrapper.find(".related-items-scroll");
+            var $left = $wrapper.find(".related-scroll-arrow-left");
+            var $right = $wrapper.find(".related-scroll-arrow-right");
+
+            if (!$scroll.length) {
+              return;
+            }
+
+            function updateArrows() {
+              var el = $scroll[0];
+              if (!el) return;
+
+              var scrollWidth = el.scrollWidth;
+              var clientWidth = el.clientWidth;
+              var scrollLeft = el.scrollLeft;
+
+              if (scrollWidth <= clientWidth + 1) {
+                $left.addClass("hidden");
+                $right.addClass("hidden");
+                return;
+              }
+
+              if (scrollLeft <= 0) {
+                $left.addClass("hidden");
+              } else {
+                $left.removeClass("hidden");
+              }
+
+              if (scrollLeft + clientWidth >= scrollWidth - 1) {
+                $right.addClass("hidden");
+              } else {
+                $right.removeClass("hidden");
+              }
+            }
+
+            var scrollAmount = 220;
+
+            $left.on("click", function (evt) {
+              evt.preventDefault();
+              $scroll.animate(
+                { scrollLeft: $scroll.scrollLeft() - scrollAmount },
+                200,
+                updateArrows
+              );
+            });
+
+            $right.on("click", function (evt) {
+              evt.preventDefault();
+              $scroll.animate(
+                { scrollLeft: $scroll.scrollLeft() + scrollAmount },
+                200,
+                updateArrows
+              );
+            });
+
+            $scroll.on("scroll", updateArrows);
+            $(window).on("resize", updateArrows);
+
+            updateArrows();
+          });
+        });
+      })();
+    </script>
+
     {% include 'footer.html' %}
 
 </body>

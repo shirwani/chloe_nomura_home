@@ -11,110 +11,358 @@
     {% include 'header.html' %}
 
     <div class="container">
-        <div class="inventory-header">
-            <div>
-                <h1>Inventory</h1>
-                <div class="inventory-meta">
-                    {% if total_items is defined %}
-                        Showing
-                        {% if total_items == 0 %}
-                            0
-                        {% else %}
-                            {{ (page - 1) * per_page + 1 }}
-                            –
-                            {{ ((page - 1) * per_page + inventory|length) }}
-                        {% endif %}
-                        of {{ total_items }} item{% if total_items != 1 %}s{% endif %}
-                    {% else %}
-                        {{ inventory|length }} item{% if inventory|length != 1 %}s{% endif %} in catalog
+        {% set selected_categories = request.args.getlist('category') %}
+        {% set selected_statuses = request.args.getlist('status') %}
+
+        <div class="inventory-layout">
+            <aside class="inventory-filters">
+                <h3 class="inventory-filters-title">Filter inventory</h3>
+                <hr/>
+                <form method="get" action="{{ url_for('get_inventory') }}">
+                    <div class="inventory-filters-section">
+                        <div class="inventory-filters-section-title">Category</div>
+                        {% for cat in categories_for_filter %}
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox"
+                                       name="category"
+                                       value="{{ cat }}"
+                                       {% if cat in selected_categories %}checked{% endif %}>
+                                {{ cat }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <hr/>
+                    <div class="inventory-filters-section">
+                        <div class="inventory-filters-section-title">Status</div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="status" value="available"
+                                       {% if 'available' in selected_statuses %}checked{% endif %}>
+                                Available
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="status" value="pending"
+                                       {% if 'pending' in selected_statuses %}checked{% endif %}>
+                                Pending
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="status" value="sold"
+                                       {% if 'sold' in selected_statuses %}checked{% endif %}>
+                                Sold
+                            </label>
+                        </div>
+                    </div>
+                    <hr/>
+                    <div class="inventory-filters-section">
+                        <div class="inventory-filters-section-title">Price</div>
+                        <div class="inventory-price-filter">
+                            <div class="form-group">
+                                <label for="min_price" class="inventory-price-label">Min</label>
+                                <input type="number"
+                                       class="form-control input-sm inventory-price-input"
+                                       id="min_price"
+                                       name="min_price"
+                                       min="0"
+                                       step="0.01"
+                                       value="{{ min_price or '' }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="max_price" class="inventory-price-label">Max</label>
+                                <input type="number"
+                                       class="form-control input-sm inventory-price-input"
+                                       id="max_price"
+                                       name="max_price"
+                                       min="0"
+                                       step="0.01"
+                                       value="{{ max_price or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <div class="inventory-filters-section">
+                        <div class="inventory-filters-section-title">Special</div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox"
+                                       name="discount_only"
+                                       value="1"
+                                       {% if discount_only %}checked{% endif %}>
+                                On discount
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox"
+                                       name="hot_only"
+                                       value="1"
+                                       {% if hot_only %}checked{% endif %}>
+                                Hot items
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox"
+                                       name="trending_only"
+                                       value="1"
+                                       {% if trending_only %}checked{% endif %}>
+                                Trending items
+                            </label>
+                        </div>
+                    </div>
+                    <hr/>
+                    <input type="hidden" name="q" value="{{ request.args.get('q', '') }}">
+                    <div class="inventory-filters-actions">
+                        <a href="{{ url_for('get_inventory') }}" class="btn btn-default btn-sm btn-block">Clear</a>
+                    </div>
+                </form>
+            </aside>
+
+            <div class="inventory-main">
+                <div class="inventory-header">
+                    <div>
+                        <h1>Inventory</h1>
+                        <div class="inventory-meta">
+                            {% if total_items is defined %}
+                                Showing
+                                {% if total_items == 0 %}
+                                    0
+                                {% else %}
+                                    {{ (page - 1) * per_page + 1 }}
+                                    –
+                                    {{ ((page - 1) * per_page + inventory|length) }}
+                                {% endif %}
+                                of {{ total_items }} item{% if total_items != 1 %}s{% endif %}
+                            {% else %}
+                                {{ inventory|length }} item{% if inventory|length != 1 %}s{% endif %} in catalog
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if user_is_admin %}
+                    <div>
+                        <a href="{{ url_for('add_product') }}" class="btn btn-default">
+                            <span class="glyphicon glyphicon-plus"></span> Add Item
+                        </a>
+                    </div>
                     {% endif %}
                 </div>
-            </div>
-            {% if user_is_admin %}
-            <div>
-                <a href="{{ url_for('add_product') }}" class="btn btn-primary">
-                    Add Item
-                </a>
-            </div>
-            {% endif %}
-        </div>
 
-        <div class="table-responsive inventory-table {% if inventory|length == 1 %}single-item-table{% endif %}">
-            <table class="table">
-                <tbody>
-                    {% for item in inventory %}
-                        {% if loop.index0 is divisibleby 5 %}
-                        <tr>
-                        {% endif %}
+                <div class="table-responsive inventory-table {% if inventory|length == 1 %}single-item-table{% endif %}">
+                    <table class="table">
+                        <tbody>
+                            {% for item in inventory %}
+                                {% if loop.index0 is divisibleby 4 %}
+                                <tr>
+                                {% endif %}
 
-                        <td class="inventory-card">
-                            <a href="{{ url_for('product_detail', item_id=item.id) }}">
-                                <img src="{{ item.image_url }}"
-                                     alt="{{ item.name }}"
-                                     class="thumbnail-image">
-                            </a>
-                            <div class="inventory-name">
-                                <a href="{{ url_for('product_detail', item_id=item.id) }}">
-                                    {{ item.name }}
-                                </a>
-                            </div>
-                            <div class="inventory-price-line">
-                                <span class="inventory-price">
-                                    ${{ "%.2f"|format(item.price) }}
-                                </span>
-                                <span class="status-badge
-                                             {% if item.id|string in cart_item_ids %}status-in-cart
-                                             {% elif item.status == 'available' %}status-available
-                                             {% elif item.status == 'pending' %}status-pending
-                                             {% else %}status-sold{% endif %}">
-                                    {% if item.id|string in cart_item_ids %}
-                                        IN YOUR CART
+                                <td class="inventory-card">
+                                    {% set v = item.views or 0 %}
+                                    {% set l = item.likes or 0 %}
+                                    {% if v > 0 %}
+                                        {% set p = ((l * 100.0) / v)|round(0, 'ceil') %}
                                     {% else %}
-                                        {{ item.status|capitalize }}
+                                        {% set p = 0 %}
                                     {% endif %}
-                                </span>
-                            </div>
-                            {% if item.description %}
-                            <div class="inventory-description">
-                                {{ item.description|trim|truncate(300, True, '…') }}
-                            </div>
-                            {% endif %}
-                        </td>
+                                    {% set item_id_str = item.id|string %}
+                                    {% set images = (inventory_images[item_id_str] if inventory_images is defined and item_id_str in inventory_images else []) %}
+                                    {% set primary_image = images[0] if images else item.image_url %}
+                                    <div class="inventory-image-carousel"
+                                         data-images='{{ images|tojson|safe }}'>
+                                        <button type="button"
+                                                class="inventory-image-arrow inventory-image-arrow-left"
+                                                aria-label="Previous image">
+                                            <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                                        </button>
+                                        <a href="{{ url_for('product_detail', item_id=item.id) }}" class="inventory-image-link">
+                                            <img src="{{ primary_image }}"
+                                                 alt="{{ item.name }}"
+                                                 class="thumbnail-image">
+                                        </a>
+                                        <button type="button"
+                                                class="inventory-image-arrow inventory-image-arrow-right"
+                                                aria-label="Next image">
+                                            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                    <div class="inventory-name">
+                                        <a href="{{ url_for('product_detail', item_id=item.id) }}">
+                                            {{ item.name }}
+                                        </a>
+                                    </div>
+                                    <div class="inventory-price-line">
+                                        {% set has_discount = (item.original_price is not none) and (item.original_price > item.price) %}
+                                        {% if has_discount %}
+                                            <span class="inventory-price inventory-price-original">
+                                                ${{ "%.2f"|format(item.original_price) }}
+                                            </span>
+                                            <span class="inventory-price inventory-price-discount">
+                                                ${{ "%.2f"|format(item.price) }}
+                                            </span>
+                                        {% else %}
+                                            <span class="inventory-price">
+                                                ${{ "%.2f"|format(item.price) }}
+                                            </span>
+                                        {% endif %}
+                                        <span class="status-badge
+                                                     {% if item.id|string in cart_item_ids %}status-in-cart
+                                                     {% elif item.status == 'available' %}status-available
+                                                     {% elif item.status == 'pending' %}status-pending
+                                                     {% else %}status-sold{% endif %}">
+                                            {% if item.id|string in cart_item_ids %}
+                                                IN YOUR CART
+                                            {% else %}
+                                                {{ item.status|capitalize }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="like-form inline-like-form">
+                                            <span class="glyphicon glyphicon-heart-empty" aria-hidden="true"></span>
+                                            <span class="like-count">
+                                                {{ item.likes or 0 }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    {% if user_is_admin %}
+                                    <div class="inventory-metrics text-muted">
+                                        Views: {{ v }} (Popularity: {{ p }}%)
+                                    </div>
+                                    {% endif %}
+                                    {% if item.description %}
+                                    <div class="inventory-description">
+                                        {{ item.description|trim|truncate(300, True, '…') }}
+                                    </div>
+                                    {% endif %}
+                                    {% if p > 10 %}
+                                    <span class="inventory-hot-badge">
+                                        <span class="glyphicon glyphicon-certificate" aria-hidden="true"></span>
+                                        <span class="inventory-hot-text">HOT</span>
+                                    </span>
+                                    {% endif %}
+                                </td>
 
-                        {% if loop.index is divisibleby 5 or loop.last %}
-                        </tr>
-                        {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
+                                {% if loop.index is divisibleby 4 or loop.last %}
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if total_pages is defined and total_pages > 1 %}
+                <nav aria-label="Inventory pagination">
+                    <ul class="pagination">
+                        <li class="{% if page <= 1 %}disabled{% endif %}">
+                            <a href="{% if page > 1 %}{{ url_for('get_inventory', page=page-1, q=search_query, category=selected_categories, status=selected_statuses) }}{% else %}#{% endif %}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+
+                        {% for p in range(1, total_pages + 1) %}
+                        <li class="{% if p == page %}active{% endif %}">
+                            <a href="{{ url_for('get_inventory', page=p, q=search_query, category=selected_categories, status=selected_statuses) }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+
+                        <li class="{% if page >= total_pages %}disabled{% endif %}">
+                            <a href="{% if page < total_pages %}{{ url_for('get_inventory', page=page+1, q=search_query, category=selected_categories, status=selected_statuses) }}{% else %}#{% endif %}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
         </div>
-
-        {% if total_pages is defined and total_pages > 1 %}
-        <nav aria-label="Inventory pagination">
-            <ul class="pagination">
-                <li class="{% if page <= 1 %}disabled{% endif %}">
-                    <a href="{% if page > 1 %}{{ url_for('get_inventory', page=page-1, q=search_query) }}{% else %}#{% endif %}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-
-                {% for p in range(1, total_pages + 1) %}
-                <li class="{% if p == page %}active{% endif %}">
-                    <a href="{{ url_for('get_inventory', page=p, q=search_query) }}">{{ p }}</a>
-                </li>
-                {% endfor %}
-
-                <li class="{% if page >= total_pages %}disabled{% endif %}">
-                    <a href="{% if page < total_pages %}{{ url_for('get_inventory', page=page+1, q=search_query) }}{% else %}#{% endif %}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        {% endif %}
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+      // Automatically re-submit the inventory filter whenever options change
+      document.addEventListener("DOMContentLoaded", function () {
+        var form = document.querySelector(".inventory-filters form");
+
+        if (form) {
+          var checkboxes = form.querySelectorAll('input[type="checkbox"]');
+          var priceInputs = form.querySelectorAll('input[name="min_price"], input[name="max_price"]');
+
+          function submitFilters() {
+            form.submit();
+          }
+
+          checkboxes.forEach(function (cb) {
+            cb.addEventListener("change", submitFilters);
+          });
+
+          priceInputs.forEach(function (input) {
+            input.addEventListener("change", submitFilters);
+            input.addEventListener("blur", submitFilters);
+            input.addEventListener("keyup", function (evt) {
+              if (evt.key === "Enter") {
+                submitFilters();
+              }
+            });
+          });
+        }
+
+        // Inventory thumbnail image carousel for each card
+        var carousels = document.querySelectorAll(".inventory-image-carousel");
+        carousels.forEach(function (carousel) {
+          var imgEl = carousel.querySelector(".inventory-image-link img");
+          if (!imgEl) return;
+
+          var images = [];
+          var data = carousel.getAttribute("data-images") || "[]";
+          try {
+            images = JSON.parse(data);
+          } catch (e) {
+            images = [];
+          }
+
+          if (!images || !images.length) {
+            var current = imgEl.getAttribute("src");
+            if (current) {
+              images = [current];
+            }
+          }
+
+          if (!images.length) {
+            return;
+          }
+
+          var index = 0;
+
+          function showImage(newIndex) {
+            if (!images.length) return;
+            index = (newIndex + images.length) % images.length;
+            imgEl.setAttribute("src", images[index]);
+          }
+
+          var left = carousel.querySelector(".inventory-image-arrow-left");
+          var right = carousel.querySelector(".inventory-image-arrow-right");
+
+          if (left) {
+            left.addEventListener("click", function (evt) {
+              evt.preventDefault();
+              evt.stopPropagation();
+              showImage(index - 1);
+            });
+          }
+
+          if (right) {
+            right.addEventListener("click", function (evt) {
+              evt.preventDefault();
+              evt.stopPropagation();
+              showImage(index + 1);
+            });
+          }
+        });
+      });
+    </script>
+    {% include 'footer.html' %}
 </body>
 </html>
 

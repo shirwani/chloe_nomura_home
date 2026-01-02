@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Your Cart</title>
+    <title>Order Details</title>
 </head>
 <body class="inventory-page">
     {% include 'header.html' %}
@@ -13,9 +13,10 @@
     <div class="container">
         <div class="inventory-header">
             <div>
-                <h1>Your Cart</h1>
+                <h1>Order Details</h1>
                 <div class="inventory-meta">
-                    {{ cart_count or 0 }} item{% if (cart_count or 0) != 1 %}s{% endif %} in cart
+                    Order Date: {{ (sale.date or '')[:10] }} ·
+                    Order ID: {{ sale.sale_id }}
                 </div>
             </div>
         </div>
@@ -47,13 +48,6 @@
                                                 ${{ "%.2f"|format(item.price) }}
                                             </div>
                                         </div>
-                                        <div class="cart-item-remove">
-                                            <form method="post" action="{{ url_for('remove_from_cart', item_id=item.id) }}">
-                                                <button type="submit" class="btn btn-link text-danger">
-                                                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-                                                </button>
-                                            </form>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -65,31 +59,16 @@
         </div>
 
         <hr/>
-        {% else %}
-        <div class="alert alert-info cart-empty-alert" role="alert">
-            Your cart is currently empty.
-        </div>
-        {% endif %}
 
         <div class="cart-summary right">
-            {% if items %}
-            <h4>Total: ${{ "%.2f"|format(total) }}</h4>
-            {% endif %}
-            {% if user_is_guest %}
-            <a href="{{ url_for('get_inventory') }}" class="btn btn-default" style="margin-right: 8px;">
-                <span class="glyphicon glyphicon-arrow-left"></span> Back to Inventory
-            </a>
-            {% else %}
-            <a href="{{ url_for('get_inventory') }}" class="btn btn-default" style="margin-right: 8px;">
-                <span class="glyphicon glyphicon-arrow-left"></span> Continue Shopping
-            </a>
-            {% endif %}
-            {% if items %}
-            <a href="{{ url_for('checkout') }}" class="btn btn-default">
-                Proceed to Checkout <span class="glyphicon glyphicon-arrow-right"></span>
-            </a>
-            {% endif %}
+            <span>Subtotal: ${{ "%.2f"|format(sale.subtotal) }}</span><br/>
+            <span>Tax: ${{ "%.2f"|format(sale.taxes) }}</span><br/>
+            <span>Shipping: ${{ "%.2f"|format(sale.shipping_fee) }}</span><br/> 
+            <h4>Total Paid: ${{ "%.2f"|format(sale.total) }}</h4>
         </div>
+        {% else %}
+        <p>No items were found for this order.</p>
+        {% endif %}
     </div>
     {% include 'footer.html' %}
 

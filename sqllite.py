@@ -1,186 +1,10 @@
-import os
+import sqlite3
 from datetime import datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
-import mysql.connector
-from mysql.connector import pooling
 
-
-# ---------------------------------------------------------------------------
-# DigitalOcean MySQL connection configuration
-# ---------------------------------------------------------------------------
-DB_USER = os.environ.get("DB_USER")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-DB_HOST = os.environ.get("DB_HOST")
-DB_PORT = int(os.environ.get("DB_PORT"))
-DB_NAME = os.environ.get("DB_NAME", "chloe_home_test")
-
-# If your DO cluster requires SSL (recommended), download the CA certificate
-# from the DigitalOcean control panel and point DB_SSL_CA to its path, e.g.:
-#   export DB_SSL_CA=/path/to/ca-certificate.crt
-DB_SSL_CA = os.environ.get("DB_SSL_CA")
-
-
-_POOL: pooling.MySQLConnectionPool | None = None
-
-
-def get_connection():
-    """
-    Create and return a MySQL connection to the configured DigitalOcean database.
-
-    Uses a global connection pool so individual Flask requests can reuse
-    underlying TCP/SSL connections instead of creating a brand new one
-    on every DBInterface() instantiation.
-    """
-    global _POOL
-
-    if _POOL is None:
-        pool_kwargs: dict = {
-            "pool_name": "chloe_pool",
-            "pool_size": int(os.environ.get("DB_POOL_SIZE", "5")),
-            "host": DB_HOST,
-            "port": DB_PORT,
-            "user": DB_USER,
-            "password": DB_PASSWORD,
-            "database": DB_NAME,
-        }
-        if DB_SSL_CA:
-            pool_kwargs["ssl_ca"] = DB_SSL_CA
-
-        _POOL = pooling.MySQLConnectionPool(**pool_kwargs)
-
-    return _POOL.get_connection()
-
-
-# ---------------------------------------------------------------------------
-# Schema definitions for MySQL (chloe_home_test)
-# ---------------------------------------------------------------------------
-
-SCHEMA_STATEMENTS: dict[str, str] = {
-    "inventory": """
-        CREATE TABLE IF NOT EXISTS inventory (
-            id              CHAR(36) NOT NULL PRIMARY KEY,
-            name            VARCHAR(255),
-            price           DECIMAL(10, 2),
-            original_price  DECIMAL(10, 2),
-            description     TEXT,
-            image_url       VARCHAR(500),
-            created_at      DATETIME,
-            updated_at      DATETIME,
-            status          VARCHAR(50),
-            category        VARCHAR(100),
-            views           INT NOT NULL DEFAULT 0,
-            likes           INT NOT NULL DEFAULT 0
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "inventory_likes": """
-        CREATE TABLE IF NOT EXISTS inventory_likes (
-            user_id CHAR(36) NOT NULL,
-            item_id CHAR(36) NOT NULL,
-            PRIMARY KEY (user_id, item_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "users": """
-        CREATE TABLE IF NOT EXISTS users (
-            id        CHAR(36) NOT NULL PRIMARY KEY,
-            firstname VARCHAR(100),
-            lastname  VARCHAR(100),
-            email     VARCHAR(255) UNIQUE,
-            password  VARCHAR(255),
-            phone     VARCHAR(50),
-            usertype  VARCHAR(100)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "inventory_images": """
-        CREATE TABLE IF NOT EXISTS inventory_images (
-            id        INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            item_id   CHAR(36),
-            image_url VARCHAR(500),
-            INDEX idx_inventory_images_item (item_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "cart_items": """
-        CREATE TABLE IF NOT EXISTS cart_items (
-            cart_id  CHAR(36) NOT NULL,
-            item_id  CHAR(36) NOT NULL,
-            quantity INT NOT NULL,
-            PRIMARY KEY (cart_id, item_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "password_reset_tokens": """
-        CREATE TABLE IF NOT EXISTS password_reset_tokens (
-            token      VARCHAR(64) NOT NULL PRIMARY KEY,
-            user_id    CHAR(36),
-            expires_at DATETIME
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "orders": """
-        CREATE TABLE IF NOT EXISTS orders (
-            order_id     CHAR(36) NOT NULL PRIMARY KEY,
-            user_id      CHAR(36),
-            date         DATETIME,
-            subtotal     DECIMAL(10, 2),
-            taxes        DECIMAL(10, 2),
-            shipping_fee DECIMAL(10, 2),
-            total        DECIMAL(10, 2),
-            payment_id   CHAR(36)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "items_sold": """
-        CREATE TABLE IF NOT EXISTS items_sold (
-            sale_id CHAR(36) NOT NULL,
-            item_id CHAR(36) NOT NULL,
-            PRIMARY KEY (sale_id, item_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-    "payments": """
-        CREATE TABLE IF NOT EXISTS payments (
-            payment_id                  CHAR(36) NOT NULL PRIMARY KEY,
-            sale_id                     CHAR(36) NOT NULL,
-            payment_method              VARCHAR(50),
-            payment_confirmation_number VARCHAR(255)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """,
-}
-
-
-def create_schema():
-    """
-    Create all tables required by the Chloe Nomura Home application in the
-    DigitalOcean MySQL database specified by DB_NAME (defaults to
-    'chloe_home_test').
-
-    Run this once after provisioning the database cluster, or any time you
-    need to ensure the schema exists.
-    """
-
-    conn = get_connection()
-    try:
-        cursor = conn.cursor()
-        for name, ddl in SCHEMA_STATEMENTS.items():
-            cursor.execute(ddl)
-        conn.commit()
-    finally:
-        try:
-            cursor.close()
-        except Exception:
-            pass
-        conn.close()
-
-
-if __name__ == "__main__":
-    # Simple CLI entrypoint so you can run:
-    #   python database.py
-    # to create the schema in your DigitalOcean test database.
-    print(f"Connecting to MySQL database '{DB_NAME}' on {DB_HOST}:{DB_PORT} as {DB_USER}...")
-    create_schema()
-    print("Schema creation complete.")
-
-
-# ---------------------------------------------------------------------------
-# Application-level DB interface (MySQL-backed)
-# ---------------------------------------------------------------------------
+DB_PATH = "chloe.db"
 
 
 def parse_roles(raw: str | None) -> list[str]:
@@ -213,75 +37,60 @@ def format_roles(roles) -> str:
     return ",".join(normalized)
 
 
-class _CursorWrapper:
-    """
-    Thin wrapper around a mysql.connector cursor that converts result rows
-    into SimpleNamespace objects with attribute-style access (row.field).
-    """
-
-    def __init__(self, cursor):
-        self._cursor = cursor
-
-    @property
-    def description(self):
-        return self._cursor.description
-
-    def fetchone(self):
-        row = self._cursor.fetchone()
-        if row is None:
-            return None
-        cols = [d[0] for d in self._cursor.description]
-        data = {cols[i]: row[i] for i in range(len(cols))}
-        return SimpleNamespace(**data)
-
-    def fetchall(self):
-        rows = self._cursor.fetchall()
-        if not rows:
-            return []
-        cols = [d[0] for d in self._cursor.description]
-        out = []
-        for r in rows:
-            data = {cols[i]: r[i] for i in range(len(cols))}
-            out.append(SimpleNamespace(**data))
-        return out
-
-
 class DBInterface:
     """
-    MySQL-backed implementation of the application's database interface.
-
-    The public methods are kept compatible with the previous SQLite-based
-    implementation so the rest of the app (main.py, templates, etc.) can
-    continue to operate unchanged.
+    Compatibility wrapper that exposes the same interface as the previous
+    Cassandra-based implementation, but uses a local SQLite database instead.
     """
 
-    def __init__(self):
-        # New connection per instance; each Flask request generally creates
-        # its own DBInterface and calls shutdown() in a finally block.
-        self.conn = get_connection()
+    def __init__(self, db_path: str = DB_PATH):
+        # check_same_thread=False so we can reuse this connection across Flask requests
+        self.conn = sqlite3.connect(
+            db_path,
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+            check_same_thread=False,
+        )
+        self.conn.row_factory = self._row_factory
+
+        # Ensure core tables exist
+        self.create_inventory_table()
+        self._ensure_inventory_category_column()
+        self._ensure_inventory_discount_columns()
+        self._ensure_inventory_metrics_columns()
+        self._ensure_inventory_likes_table()
+        self.create_users_table()
+        self._ensure_images_table()
+        self._ensure_cart_items_table()
+        self._ensure_password_reset_table()
+        self._ensure_orders_tables()
+        self.backfill_inventory_categories()
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _row_factory(cursor, row):
+        """
+        Convert SQLite rows into simple objects with attribute access,
+        and parse timestamp fields into datetime objects when possible.
+        """
+        data = {}
+        for idx, col in enumerate(cursor.description):
+            name = col[0]
+            val = row[idx]
+            if name in ("created_at", "updated_at") and isinstance(val, str):
+                try:
+                    val = datetime.fromisoformat(val)
+                except Exception:
+                    pass
+            data[name] = val
+        return SimpleNamespace(**data)
+
     def _execute(self, query: str, params=()):
-        """
-        Execute a parameterized query and return a cursor wrapper whose
-        fetchone()/fetchall() yield SimpleNamespace rows.
-        """
-        # Use a buffered cursor so results are fully fetched and we don't
-        # hit "Unread result found" errors when committing.
-        cur = self.conn.cursor(buffered=True)
-        cur.execute(query, params)
-
-        wrapper = _CursorWrapper(cur)
-
-        # Only commit for statements that do not return rows (INSERT/UPDATE/DELETE).
-        # SELECT and other read-only statements leave with_rows=True.
-        if not cur.with_rows:
-            self.conn.commit()
-
-        return wrapper
+        cur = self.conn.execute(query, params)
+        self.conn.commit()
+        return cur
 
     def shutdown(self):
         try:
@@ -289,36 +98,230 @@ class DBInterface:
         except Exception:
             pass
 
-    # NOTE: In MySQL we manage schema separately (see create_schema above),
-    # so the various _ensure_* helpers from the SQLite version become
-    # simple no-ops, kept only for API compatibility.
+    # ------------------------------------------------------------------
+    # Schema helpers
+    # ------------------------------------------------------------------
+
+    def create_inventory_table(self):
+        query = """
+            CREATE TABLE IF NOT EXISTS inventory (
+                id          TEXT PRIMARY KEY,
+                name        TEXT,
+                price       REAL,
+                original_price REAL,
+                description TEXT,
+                image_url   TEXT,
+                created_at  TEXT,
+                updated_at  TEXT,
+                status      TEXT,
+                category    TEXT,
+                views       INTEGER DEFAULT 0,
+                likes       INTEGER DEFAULT 0
+            );
+        """
+        self._execute(query)
 
     def _ensure_inventory_category_column(self):
-        return
+        """
+        Ensure the inventory table has a 'category' TEXT column.
+        """
+        cur = self._execute("PRAGMA table_info(inventory);")
+        columns = [row.name for row in cur.fetchall()]
+        if "category" not in columns:
+            # Add a nullable category column; we'll backfill values separately.
+            self._execute("ALTER TABLE inventory ADD COLUMN category TEXT;")
 
     def _ensure_inventory_discount_columns(self):
-        return
+        """
+        Ensure the inventory table has an 'original_price' REAL column used
+        to represent the non-discounted price when an item is on sale.
+
+        The current selling price continues to live in the 'price' column.
+        """
+        cur = self._execute("PRAGMA table_info(inventory);")
+        columns = [row.name for row in cur.fetchall()]
+        if "original_price" not in columns:
+            # Nullable so existing rows remain valid; when null or <= price,
+            # the item is treated as not discounted.
+            self._execute("ALTER TABLE inventory ADD COLUMN original_price REAL;")
 
     def _ensure_inventory_metrics_columns(self):
-        return
+        """
+        Ensure the inventory table has integer 'views' and 'likes' columns
+        used for simple engagement tracking.
+
+        Both columns default to 0 for new and existing rows.
+        """
+        cur = self._execute("PRAGMA table_info(inventory);")
+        columns = [row.name for row in cur.fetchall()]
+        if "views" not in columns:
+            self._execute(
+                "ALTER TABLE inventory ADD COLUMN views INTEGER DEFAULT 0;"
+            )
+        if "likes" not in columns:
+            self._execute(
+                "ALTER TABLE inventory ADD COLUMN likes INTEGER DEFAULT 0;"
+            )
 
     def _ensure_inventory_likes_table(self):
-        return
+        """
+        Ensure the inventory_likes table exists.
+        This table tracks which users have liked which items so that
+        likes can be toggled per user rather than incremented blindly.
+        Schema:
+          - user_id TEXT
+          - item_id TEXT
+          PRIMARY KEY (user_id, item_id)
+        """
+        query = """
+            CREATE TABLE IF NOT EXISTS inventory_likes (
+                user_id TEXT,
+                item_id TEXT,
+                PRIMARY KEY (user_id, item_id)
+            );
+        """
+        self._execute(query)
 
     def create_users_table(self):
-        return
+        """
+        Create a Users table for storing basic account information.
+        Schema:
+          - id        UUID PRIMARY KEY
+          - firstname TEXT
+          - lastname  TEXT
+          - email     TEXT
+          - password  TEXT  (hashed)
+          - phone     TEXT
+          - usertype  TEXT  (e.g., 'customer', 'admin')
+        """
+        query = """
+            CREATE TABLE IF NOT EXISTS users (
+                id        TEXT PRIMARY KEY,
+                firstname TEXT,
+                lastname  TEXT,
+                email     TEXT UNIQUE,
+                password  TEXT,
+                phone     TEXT,
+                usertype  TEXT
+            );
+        """
+        self._execute(query)
 
     def _ensure_images_table(self):
-        return
+        """
+        Ensure the helper table for additional images exists.
+        """
+        query = """
+            CREATE TABLE IF NOT EXISTS inventory_images (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_id   TEXT,
+                image_url TEXT
+            );
+        """
+        self._execute(query)
+        # Helpful index for lookups by item_id
+        self._execute(
+            "CREATE INDEX IF NOT EXISTS idx_inventory_images_item ON inventory_images(item_id);"
+        )
 
     def _ensure_cart_items_table(self):
-        return
+        """
+        Ensure the cart_items table exists.
+        Schema:
+          - cart_id  UUID  (per-browser / per-session cart identifier)
+          - item_id  UUID  (inventory item)
+          - quantity INT   (usually 1 for furniture)
+        """
+        query = """
+            CREATE TABLE IF NOT EXISTS cart_items (
+                cart_id  TEXT,
+                item_id  TEXT,
+                quantity INTEGER,
+                PRIMARY KEY (cart_id, item_id)
+            );
+        """
+        self._execute(query)
 
     def _ensure_password_reset_table(self):
-        return
+        """
+        Ensure the password_reset_tokens table exists.
+        Schema:
+          - token      TEXT PRIMARY KEY
+          - user_id    TEXT (references users.id)
+          - expires_at TEXT (ISO-8601 timestamp)
+        """
+        query = """
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                token      TEXT PRIMARY KEY,
+                user_id    TEXT,
+                expires_at TEXT
+            );
+        """
+        self._execute(query)
 
     def _ensure_orders_tables(self):
-        return
+        """
+        Ensure the Orders, ItemSold, and Payments tables exist for recording
+        orders. Also migrate any legacy 'sales' table to 'orders'.
+        """
+        # Check for existing orders table
+        cur = self._execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='orders';"
+        )
+        has_orders = cur.fetchone() is not None
+
+        # Check for legacy sales table
+        cur = self._execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='sales';"
+        )
+        has_sales = cur.fetchone() is not None
+
+        # If there is a legacy 'sales' table but no 'orders' table, migrate
+        if not has_orders and has_sales:
+            # Rename table
+            self._execute("ALTER TABLE sales RENAME TO orders;")
+            # Attempt to rename primary key column sale_id -> order_id
+            try:
+                self._execute("ALTER TABLE orders RENAME COLUMN sale_id TO order_id;")
+            except Exception:
+                # If the SQLite runtime does not support RENAME COLUMN,
+                # continue using the existing column name.
+                pass
+
+        # Orders table
+        orders_query = """
+            CREATE TABLE IF NOT EXISTS orders (
+                order_id     TEXT PRIMARY KEY,
+                user_id      TEXT,
+                date         TEXT,
+                subtotal     REAL,
+                taxes        REAL,
+                shipping_fee REAL,
+                total        REAL,
+                payment_id   TEXT
+            );
+        """
+        self._execute(orders_query)
+
+        # ItemSold table
+        items_sold_query = """
+            CREATE TABLE IF NOT EXISTS items_sold (
+                sale_id TEXT,
+                item_id TEXT
+            );
+        """
+        self._execute(items_sold_query)
+
+        # Payments table
+        payments_query = """
+            CREATE TABLE IF NOT EXISTS payments (
+                payment_id                 TEXT PRIMARY KEY,
+                sale_id                    TEXT,
+                payment_method             TEXT,
+                payment_confirmation_number TEXT
+            );
+        """
+        self._execute(payments_query)
 
     # ------------------------------------------------------------------
     # Sales / Payments helpers
@@ -326,14 +329,8 @@ class DBInterface:
 
     TAX_RATE = 0.065
 
-    def create_sale(
-        self,
-        user_id: str | None,
-        items,
-        shipping_fee: float,
-        payment_method: str,
-        payment_confirmation_number: str,
-    ):
+    def create_sale(self, user_id: str | None, items, shipping_fee: float, payment_method: str,
+                    payment_confirmation_number: str):
         """
         Create a sale record with associated line items and payment.
 
@@ -354,13 +351,13 @@ class DBInterface:
 
         taxes = round(subtotal * self.TAX_RATE, 2)
         total = round(subtotal + taxes + float(shipping_fee or 0), 2)
-        now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        now = datetime.utcnow().isoformat()
 
         # Insert order (formerly 'sale')
         self._execute(
             """
             INSERT INTO orders (order_id, user_id, date, subtotal, taxes, shipping_fee, total, payment_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (sale_id, user_id, now, subtotal, taxes, shipping_fee, total, payment_id),
         )
@@ -371,7 +368,7 @@ class DBInterface:
             if not item_id:
                 continue
             self._execute(
-                "INSERT INTO items_sold (sale_id, item_id) VALUES (%s, %s);",
+                "INSERT INTO items_sold (sale_id, item_id) VALUES (?, ?);",
                 (sale_id, item_id),
             )
 
@@ -379,7 +376,7 @@ class DBInterface:
         self._execute(
             """
             INSERT INTO payments (payment_id, sale_id, payment_method, payment_confirmation_number)
-            VALUES (%s, %s, %s, %s);
+            VALUES (?, ?, ?, ?);
             """,
             (payment_id, sale_id, payment_method, payment_confirmation_number),
         )
@@ -406,7 +403,7 @@ class DBInterface:
         if not user_id:
             return 0
         cur = self._execute(
-            "SELECT COUNT(*) AS cnt FROM orders WHERE user_id = %s;",
+            "SELECT COUNT(*) AS cnt FROM orders WHERE user_id = ?;",
             (user_id,),
         )
         row = cur.fetchone()
@@ -423,9 +420,9 @@ class DBInterface:
         query = """
             SELECT order_id AS sale_id, date, total
             FROM orders
-            WHERE user_id = %s
+            WHERE user_id = ?
             ORDER BY date DESC
-            LIMIT %s OFFSET %s;
+            LIMIT ? OFFSET ?;
         """
         cur = self._execute(query, (user_id, limit, offset))
         return cur.fetchall()
@@ -438,7 +435,7 @@ class DBInterface:
             return None
         cur = self._execute(
             "SELECT order_id AS sale_id, user_id, date, subtotal, taxes, shipping_fee, total, payment_id "
-            "FROM orders WHERE order_id = %s;",
+            "FROM orders WHERE order_id = ?;",
             (sale_id,),
         )
         return cur.fetchone()
@@ -454,7 +451,7 @@ class DBInterface:
             SELECT i.*
             FROM items_sold s
             JOIN inventory i ON s.item_id = i.id
-            WHERE s.sale_id = %s;
+            WHERE s.sale_id = ?;
         """
         cur = self._execute(query, (sale_id,))
         return cur.fetchall()
@@ -470,11 +467,8 @@ class DBInterface:
         """
         self._ensure_password_reset_table()
         query = """
-            INSERT INTO password_reset_tokens (token, user_id, expires_at)
-            VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                user_id = VALUES(user_id),
-                expires_at = VALUES(expires_at);
+            INSERT OR REPLACE INTO password_reset_tokens (token, user_id, expires_at)
+            VALUES (?, ?, ?);
         """
         self._execute(query, (token, user_id, expires_at))
 
@@ -483,7 +477,7 @@ class DBInterface:
         Fetch a password reset token row by token value.
         """
         self._ensure_password_reset_table()
-        query = "SELECT token, user_id, expires_at FROM password_reset_tokens WHERE token = %s;"
+        query = "SELECT token, user_id, expires_at FROM password_reset_tokens WHERE token = ?;"
         cur = self._execute(query, (token,))
         return cur.fetchone()
 
@@ -492,7 +486,7 @@ class DBInterface:
         Delete a single password reset token.
         """
         self._ensure_password_reset_table()
-        self._execute("DELETE FROM password_reset_tokens WHERE token = %s;", (token,))
+        self._execute("DELETE FROM password_reset_tokens WHERE token = ?;", (token,))
 
     # ------------------------------------------------------------------
     # Inventory operations
@@ -503,9 +497,7 @@ class DBInterface:
         Insert a new inventory row; returns the generated id.
         """
         item_id = str(uuid4())
-        created_at = data.get("created_at") or datetime.utcnow().isoformat(
-            sep=" ", timespec="seconds"
-        )
+        created_at = data.get("created_at") or datetime.now().isoformat()
         updated_at = data.get("updated_at") or created_at
         # Derive a category if not explicitly provided
         category = data.get("category") or self._infer_inventory_category(
@@ -527,7 +519,7 @@ class DBInterface:
 
         query = f"""
             INSERT INTO {tablename} (id, name, price, original_price, description, image_url, created_at, updated_at, status, category)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
         self._execute(
             query,
@@ -555,7 +547,7 @@ class DBInterface:
         """
         Fetch a single item by its UUID primary key.
         """
-        query = f"SELECT * FROM {tablename} WHERE id = %s;"
+        query = f"SELECT * FROM {tablename} WHERE id = ?;"
         cur = self._execute(query, (item_id,))
         return cur.fetchone()
 
@@ -568,7 +560,7 @@ class DBInterface:
         query = f"""
             UPDATE {tablename}
             SET views = COALESCE(views, 0) + 1
-            WHERE id = %s;
+            WHERE id = ?;
         """
         self._execute(query, (item_id,))
 
@@ -581,7 +573,7 @@ class DBInterface:
         query = f"""
             UPDATE {tablename}
             SET likes = COALESCE(likes, 0) + 1
-            WHERE id = %s;
+            WHERE id = ?;
         """
         self._execute(query, (item_id,))
 
@@ -597,14 +589,12 @@ class DBInterface:
             return False
         self._ensure_inventory_likes_table()
         cur = self._execute(
-            "SELECT 1 FROM inventory_likes WHERE user_id = %s AND item_id = %s LIMIT 1;",
+            "SELECT 1 FROM inventory_likes WHERE user_id = ? AND item_id = ? LIMIT 1;",
             (user_id, item_id),
         )
         return cur.fetchone() is not None
 
-    def add_like_for_item(
-        self, user_id: str, item_id: str, tablename: str = "inventory"
-    ):
+    def add_like_for_item(self, user_id: str, item_id: str, tablename: str = "inventory"):
         """
         Record a like from a user for an item and increment the aggregate
         likes counter on the inventory row. If the user has already liked
@@ -617,7 +607,7 @@ class DBInterface:
             return
         # Record the per-user like
         self._execute(
-            "INSERT INTO inventory_likes (user_id, item_id) VALUES (%s, %s);",
+            "INSERT INTO inventory_likes (user_id, item_id) VALUES (?, ?);",
             (user_id, item_id),
         )
         # Bump the aggregate like count
@@ -625,14 +615,12 @@ class DBInterface:
             f"""
             UPDATE {tablename}
             SET likes = COALESCE(likes, 0) + 1
-            WHERE id = %s;
+            WHERE id = ?;
             """,
             (item_id,),
         )
 
-    def remove_like_for_item(
-        self, user_id: str, item_id: str, tablename: str = "inventory"
-    ):
+    def remove_like_for_item(self, user_id: str, item_id: str, tablename: str = "inventory"):
         """
         Remove a like from a user for an item and decrement the aggregate
         likes counter on the inventory row, never dropping below zero.
@@ -645,28 +633,24 @@ class DBInterface:
             return
         # Remove the per-user like
         self._execute(
-            "DELETE FROM inventory_likes WHERE user_id = %s AND item_id = %s;",
+            "DELETE FROM inventory_likes WHERE user_id = ? AND item_id = ?;",
             (user_id, item_id),
         )
         # Decrement the aggregate like count, clamping at 0
         self._execute(
             f"""
             UPDATE {tablename}
-            SET likes = GREATEST(COALESCE(likes, 0) - 1, 0)
-            WHERE id = %s;
+            SET likes = MAX(COALESCE(likes, 0) - 1, 0)
+            WHERE id = ?;
             """,
             (item_id,),
         )
 
-    # ------------------------------------------------------------------
-    # User helpers
-    # ------------------------------------------------------------------
-
     def get_user_by_email(self, email: str):
         """
-        Fetch a single user by email.
+        Fetch a single user by email. Uses ALLOW FILTERING, which is fine for small datasets.
         """
-        query = "SELECT * FROM users WHERE email = %s;"
+        query = "SELECT * FROM users WHERE email = ?;"
         cur = self._execute(query, (email,))
         return cur.fetchone()
 
@@ -674,7 +658,7 @@ class DBInterface:
         """
         Fetch a single user by primary key id.
         """
-        query = "SELECT * FROM users WHERE id = %s;"
+        query = "SELECT * FROM users WHERE id = ?;"
         cur = self._execute(query, (user_id,))
         return cur.fetchone()
 
@@ -694,25 +678,18 @@ class DBInterface:
         query = """
             SELECT *
             FROM users
-            WHERE firstname LIKE %s
-               OR lastname LIKE %s
-               OR email LIKE %s
-               OR phone LIKE %s
-               OR usertype LIKE %s
+            WHERE firstname LIKE ?
+               OR lastname LIKE ?
+               OR email LIKE ?
+               OR phone LIKE ?
+               OR usertype LIKE ?
             ORDER BY lastname, firstname;
         """
         cur = self._execute(query, (like, like, like, like, like))
         return cur.fetchall()
 
-    def insert_user(
-        self,
-        firstname: str,
-        lastname: str,
-        email: str,
-        password_hash: str,
-        phone: str = None,
-        usertype: str = "customer",
-    ):
+    def insert_user(self, firstname: str, lastname: str, email: str, password_hash: str,
+                    phone: str = None, usertype: str = "customer"):
         """
         Insert a new user into the users table.
         Assumes the password is already hashed.
@@ -720,7 +697,7 @@ class DBInterface:
         user_id = str(uuid4())
         query = """
             INSERT INTO users (id, firstname, lastname, email, password, phone, usertype)
-            VALUES (%s, %s, %s, %s, %s, %s, %s);
+            VALUES (?, ?, ?, ?, ?, ?, ?);
         """
         self._execute(
             query,
@@ -735,37 +712,6 @@ class DBInterface:
             ),
         )
         return user_id
-
-    def update_user(self, user_id: str, data: dict):
-        """
-        Update fields for an existing user. The `data` dict may include any of:
-        firstname, lastname, email, phone, usertype, password (already hashed).
-        Only provided fields will be updated.
-        """
-        if not data:
-            return
-
-        allowed_keys = {
-            "firstname",
-            "lastname",
-            "email",
-            "phone",
-            "usertype",
-            "password",
-        }
-        set_clauses = []
-        params = []
-        for key, value in data.items():
-            if key in allowed_keys:
-                set_clauses.append(f"{key} = %s")
-                params.append(value)
-
-        if not set_clauses:
-            return
-
-        sql = f"UPDATE users SET {', '.join(set_clauses)} WHERE id = %s;"
-        params.append(user_id)
-        self._execute(sql, tuple(params))
 
     # ------------------------------------------------------------------
     # Inventory category helpers
@@ -833,11 +779,9 @@ class DBInterface:
         """
         Populate the category column for existing inventory rows that lack it.
         """
-        # Ensure the column exists before attempting to backfill (no-op here)
+        # Ensure the column exists before attempting to backfill
         self._ensure_inventory_category_column()
-        cur = self._execute(
-            "SELECT id, name, description, category FROM inventory;",
-        )
+        cur = self._execute("SELECT id, name, description, category FROM inventory;")
         rows = cur.fetchall()
         for row in rows:
             current = getattr(row, "category", None)
@@ -848,15 +792,39 @@ class DBInterface:
                 getattr(row, "description", "") or "",
             )
             self._execute(
-                "UPDATE inventory SET category = %s WHERE id = %s;",
+                "UPDATE inventory SET category = ? WHERE id = ?;",
                 (category, row.id),
             )
+
+    def update_user(self, user_id: str, data: dict):
+        """
+        Update fields for an existing user. The `data` dict may include any of:
+        firstname, lastname, email, phone, usertype, password (already hashed).
+        Only provided fields will be updated.
+        """
+        if not data:
+            return
+
+        allowed_keys = {"firstname", "lastname", "email", "phone", "usertype", "password"}
+        set_clauses = []
+        params = []
+        for key, value in data.items():
+            if key in allowed_keys:
+                set_clauses.append(f"{key} = ?")
+                params.append(value)
+
+        if not set_clauses:
+            return
+
+        sql = f"UPDATE users SET {', '.join(set_clauses)} WHERE id = ?;"
+        params.append(user_id)
+        self._execute(sql, tuple(params))
 
     def update_item(self, tablename, item_id: str, data: dict):
         """
         Update an existing item in the given table.
         """
-        updated_at = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        updated_at = datetime.now().isoformat()
         # Preserve existing category unless explicitly provided; if not present,
         # recompute based on the updated name/description.
         existing = self.get_item_by_id(tablename, item_id)
@@ -882,15 +850,15 @@ class DBInterface:
             original_price = None
         query = f"""
             UPDATE {tablename}
-            SET name = %s,
-                price = %s,
-                original_price = %s,
-                description = %s,
-                image_url = %s,
-                status = %s,
-                category = %s,
-                updated_at = %s
-            WHERE id = %s;
+            SET name = ?,
+                price = ?,
+                original_price = ?,
+                description = ?,
+                image_url = ?,
+                status = ?,
+                category = ?,
+                updated_at = ?
+            WHERE id = ?;
         """
         self._execute(
             query,
@@ -914,12 +882,12 @@ class DBInterface:
         """
         if not item_ids:
             return
-        now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        now = datetime.now().isoformat()
         query = f"""
             UPDATE {tablename}
-            SET status = %s,
-                updated_at = %s
-            WHERE id = %s;
+            SET status = ?,
+                updated_at = ?
+            WHERE id = ?;
         """
         for item_id in item_ids:
             self._execute(
@@ -934,12 +902,12 @@ class DBInterface:
         """
         if not item_ids:
             return
-        now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        now = datetime.now().isoformat()
         query = f"""
             UPDATE {tablename}
-            SET status = %s,
-                updated_at = %s
-            WHERE id = %s;
+            SET status = ?,
+                updated_at = ?
+            WHERE id = ?;
         """
         for item_id in item_ids:
             self._execute(
@@ -954,12 +922,12 @@ class DBInterface:
         """
         if not item_ids:
             return
-        now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        now = datetime.now().isoformat()
         query = f"""
             UPDATE {tablename}
-            SET status = %s,
-                updated_at = %s
-            WHERE id = %s;
+            SET status = ?,
+                updated_at = ?
+            WHERE id = ?;
         """
         for item_id in item_ids:
             self._execute(
@@ -983,27 +951,27 @@ class DBInterface:
         # Remove from all carts
         self._ensure_cart_items_table()
         self._execute(
-            "DELETE FROM cart_items WHERE item_id = %s;",
+            "DELETE FROM cart_items WHERE item_id = ?;",
             (item_id,),
         )
 
         # Remove any additional images
         self._ensure_images_table()
         self._execute(
-            "DELETE FROM inventory_images WHERE item_id = %s;",
+            "DELETE FROM inventory_images WHERE item_id = ?;",
             (item_id,),
         )
 
         # Remove per-user like records
         self._ensure_inventory_likes_table()
         self._execute(
-            "DELETE FROM inventory_likes WHERE item_id = %s;",
+            "DELETE FROM inventory_likes WHERE item_id = ?;",
             (item_id,),
         )
 
         # Finally, delete the inventory row itself
         self._execute(
-            "DELETE FROM inventory WHERE id = %s;",
+            "DELETE FROM inventory WHERE id = ?;",
             (item_id,),
         )
 
@@ -1013,7 +981,7 @@ class DBInterface:
         """
         self._ensure_images_table()
         cur = self._execute(
-            "SELECT image_url FROM inventory_images WHERE item_id = %s;",
+            "SELECT image_url FROM inventory_images WHERE item_id = ?;",
             (item_id,),
         )
         rows = cur.fetchall()
@@ -1026,40 +994,15 @@ class DBInterface:
         self._ensure_images_table()
         # Clear existing images for this item
         self._execute(
-            "DELETE FROM inventory_images WHERE item_id = %s;",
+            "DELETE FROM inventory_images WHERE item_id = ?;",
             (item_id,),
         )
         # Insert new set
         for url in images:
             self._execute(
-                "INSERT INTO inventory_images (item_id, image_url) VALUES (%s, %s);",
+                "INSERT INTO inventory_images (item_id, image_url) VALUES (?, ?);",
                 (item_id, url),
             )
-
-    def get_images_for_items(self, item_ids):
-        """
-        Return a mapping {item_id: [image_url, ...]} for the given list of item_ids.
-        Intended to batch-load images for a page of inventory items and avoid
-        N+1 queries over the network.
-        """
-        if not item_ids:
-            return {}
-        self._ensure_images_table()
-        # De-duplicate and normalize to strings
-        unique_ids = sorted({str(i) for i in item_ids if i})
-        placeholders = ", ".join(["%s"] * len(unique_ids))
-        query = (
-            f"SELECT item_id, image_url FROM inventory_images "
-            f"WHERE item_id IN ({placeholders});"
-        )
-        cur = self._execute(query, unique_ids)
-        rows = cur.fetchall()
-        result = {iid: [] for iid in unique_ids}
-        for row in rows:
-            key = str(getattr(row, "item_id", "") or "")
-            if key:
-                result.setdefault(key, []).append(row.image_url)
-        return result
 
     # -----------------------
     # Cart helper operations
@@ -1071,7 +1014,7 @@ class DBInterface:
         """
         self._ensure_cart_items_table()
         cur = self._execute(
-            "SELECT item_id, quantity FROM cart_items WHERE cart_id = %s;",
+            "SELECT item_id, quantity FROM cart_items WHERE cart_id = ?;",
             (cart_id,),
         )
         return cur.fetchall()
@@ -1088,28 +1031,21 @@ class DBInterface:
         """
         self._ensure_cart_items_table()
         cur = self._execute(
-            "SELECT quantity FROM cart_items WHERE cart_id = %s AND item_id = %s LIMIT 1;",
+            "SELECT quantity FROM cart_items WHERE cart_id = ? AND item_id = ? LIMIT 1;",
             (cart_id, item_id),
         )
         return cur.fetchone() is not None
 
-    def add_item_to_cart(
-        self,
-        cart_id: str,
-        item_id: str,
-        quantity: int = 1,
-        ttl_seconds: int | None = None,
-    ):
+    def add_item_to_cart(self, cart_id: str, item_id: str, quantity: int = 1, ttl_seconds: int | None = None):
         """
         Add or update an item in the cart. For furniture, quantity will usually stay at 1.
         If ttl_seconds is provided, the row will expire after that many seconds.
         """
         self._ensure_cart_items_table()
-        # TTL semantics are ignored for MySQL; the row will persist until removed
+        # TTL semantics are ignored for SQLite; the row will persist until removed
         query = """
-            INSERT INTO cart_items (cart_id, item_id, quantity)
-            VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE quantity = VALUES(quantity);
+            INSERT OR REPLACE INTO cart_items (cart_id, item_id, quantity)
+            VALUES (?, ?, ?);
         """
         self._execute(query, (cart_id, item_id, quantity))
 
@@ -1119,7 +1055,7 @@ class DBInterface:
         """
         self._ensure_cart_items_table()
         self._execute(
-            "DELETE FROM cart_items WHERE cart_id = %s AND item_id = %s;",
+            "DELETE FROM cart_items WHERE cart_id = ? AND item_id = ?;",
             (cart_id, item_id),
         )
 
@@ -1129,24 +1065,26 @@ class DBInterface:
         """
         self._ensure_cart_items_table()
         self._execute(
-            "DELETE FROM cart_items WHERE cart_id = %s;",
+            "DELETE FROM cart_items WHERE cart_id = ?;",
             (cart_id,),
         )
 
     def normalize_cart_items(self, cart_id: str):
         """
         Re-insert all items in a cart without TTL so they become long-lived.
-        For MySQL this is effectively a no-op, as TTL is not used.
+        Useful when promoting a guest cart to a logged-in user's cart.
         """
+        # TTL is not used with SQLite, so there is nothing to normalize.
         return
 
     def item_is_in_any_cart(self, item_id: str) -> bool:
         """
         Return True if the given item_id exists in any cart.
+        Uses ALLOW FILTERING which is acceptable for this small dataset.
         """
         self._ensure_cart_items_table()
         cur = self._execute(
-            "SELECT cart_id FROM cart_items WHERE item_id = %s LIMIT 1;",
+            "SELECT cart_id FROM cart_items WHERE item_id = ? LIMIT 1;",
             (item_id,),
         )
         return cur.fetchone() is not None
@@ -1175,12 +1113,12 @@ class DBInterface:
         """
         if not old_name or not new_name:
             return
-        now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        now = datetime.now().isoformat()
         self._execute(
             """
             UPDATE inventory
-            SET category = %s, updated_at = %s
-            WHERE category = %s;
+            SET category = ?, updated_at = ?
+            WHERE category = ?;
             """,
             (new_name, now, old_name),
         )
@@ -1188,17 +1126,17 @@ class DBInterface:
     def delete_category_and_reassign(self, category_name: str, fallback: str = "Other"):
         """
         Delete a category by reassigning any items currently using it to `fallback`
-        (default "Other").
+        (default \"Other\").
         """
         if not category_name:
             return
         fallback = fallback or "Other"
-        now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        now = datetime.now().isoformat()
         self._execute(
             """
             UPDATE inventory
-            SET category = %s, updated_at = %s
-            WHERE category = %s;
+            SET category = ?, updated_at = ?
+            WHERE category = ?;
             """,
             (fallback, now, category_name),
         )
@@ -1208,7 +1146,7 @@ class DBInterface:
         Ensure the given category name exists somewhere in the inventory table by
         inserting a placeholder row only if absolutely necessary.
 
-        NOTE: For this app we treat "categories" as the distinct set of values
+        NOTE: For this app we treat \"categories\" as the distinct set of values
         used by existing inventory items. Creating a brand new category is as
         simple as assigning that category to at least one item. This helper is
         kept for future extensibility but is not used by the current admin UI.
@@ -1217,19 +1155,21 @@ class DBInterface:
             return
         # If there is at least one row already using this category, nothing to do.
         cur = self._execute(
-            "SELECT 1 AS has_row FROM inventory WHERE category = %s LIMIT 1;",
+            "SELECT 1 AS has_row FROM inventory WHERE category = ? LIMIT 1;",
             (category_name,),
         )
         row = cur.fetchone()
         if row is not None:
             return
         # Otherwise insert a minimal placeholder row so that the category appears.
+        # This avoids adding a separate categories table while still letting admins
+        # seed new categories if desired.
         item_id = str(uuid4())
-        now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+        now = datetime.now().isoformat()
         self._execute(
             """
             INSERT INTO inventory (id, name, price, description, image_url, created_at, updated_at, status, category)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (
                 item_id,

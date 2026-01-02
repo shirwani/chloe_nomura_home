@@ -12,16 +12,27 @@
 
     <div class="container">
         <div class="product-header">
+
+            {% if user_is_guest %}
+            <a href="{{ url_for('get_inventory') }}" class="btn btn-default" style="margin-left: 8px; margin-right: 4px;">
+                <span class="glyphicon glyphicon-arrow-left"></span> Back to Inventory
+            </a>
+            {% else %}
+            <a href="{{ url_for('get_inventory') }}" class="btn btn-default" style="margin-left: 8px; margin-right: 4px;">
+                <span class="glyphicon glyphicon-arrow-left"></span> Continue Shopping
+            </a>
+            {% endif %}
+            
             {% if user_is_admin %}
             <a href="{{ url_for('edit_product', item_id=item.id) }}" class="btn btn-default">
-                Update Listing
+                <span class="glyphicon glyphicon-edit"></span> Update Listing
             </a>
             {% endif %}
 
-            {% if not in_cart and item.status == 'available' %}
+            {% if not user_is_guest and not in_cart and item.status == 'available' %}
             <form method="post" action="{{ url_for('add_to_cart', item_id=item.id) }}" style="display:inline;">
                 <button type="submit" class="btn btn-primary">
-                    Add to Cart
+                    <span class="glyphicon glyphicon-plus"></span> Add to Cart
                 </button>
             </form>
             {% endif %}
@@ -56,8 +67,18 @@
             <div class="col-sm-6">
                 <div class="product-card">
                     <h1 class="product-title">{{ item.name }}</h1>
+                    {% set has_discount = (item.original_price is not none) and (item.original_price > item.price) %}
                     <div class="product-price">
-                        ${{ "%.2f"|format(item.price) }}
+                        {% if has_discount %}
+                            <span class="product-price-original">
+                                ${{ "%.2f"|format(item.original_price) }}
+                            </span>
+                            <span class="product-price-discount">
+                                ${{ "%.2f"|format(item.price) }}
+                            </span>
+                        {% else %}
+                            ${{ "%.2f"|format(item.price) }}
+                        {% endif %}
                     </div>
                     <div class="product-status">
                         <span class="status-badge
@@ -71,6 +92,25 @@
                                 {{ item.status|capitalize }}
                             {% endif %}
                         </span>
+                        {% if not user_is_guest %}
+                        <form method="post"
+                              action="{{ url_for('like_item', item_id=item.id) }}"
+                              class="like-form inline-like-form">
+                            <button type="submit" class="btn btn-link like-button" aria-label="Toggle like for this item">
+                                <span class="glyphicon glyphicon-heart-empty"></span>
+                            </button>
+                            <span class="like-count">
+                                {{ item.likes or 0 }}
+                            </span>
+                        </form>
+                        {% else %}
+                        <span class="like-form inline-like-form">
+                            <span class="glyphicon glyphicon-heart-empty" aria-hidden="true"></span>
+                            <span class="like-count">
+                                {{ item.likes or 0 }}
+                            </span>
+                        </span>
+                        {% endif %}
                     </div>
                     <hr>
                     <div class="product-description">{{ item.description|trim }}</div>
@@ -80,6 +120,16 @@
                         <div><strong>Category:</strong> {{ item.category or 'Other' }}</div>
                         <div><strong>Created:</strong> {{ created_display }}</div>
                         <div><strong>Last Updated:</strong> {{ updated_display }}</div>
+                        {% if user_is_admin %}
+                        {% set v = item.views or 0 %}
+                        {% set l = item.likes or 0 %}
+                        {% if v > 0 %}
+                            {% set p = ((l * 100.0) / v)|round(0, 'ceil') %}
+                        {% else %}
+                            {% set p = 0 %}
+                        {% endif %}
+                        <div><strong>Views:</strong> {{ v }} (Popularity: <span class="popularity-value">{{ p }}</span>%)</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -89,24 +139,59 @@
             <h3 class="related-items-title">
                 More in {{ item.category or 'this collection' }}
             </h3>
-            <div class="related-items-scroll">
-                {% for r in related_items %}
-                <a href="{{ url_for('product_detail', item_id=r.id) }}" class="related-item-card">
-                    <div class="related-item-image-wrapper">
-                        {% if r.image_url %}
-                        <img src="{{ r.image_url }}"
-                             alt="{{ r.name }}"
-                             class="related-item-image img-responsive">
-                        {% endif %}
-                    </div>
-                    <div class="related-item-name">
-                        {{ r.name }}
-                    </div>
-                    <div class="related-item-price">
-                        ${{ "%.2f"|format(r.price) }}
-                    </div>
-                </a>
-                {% endfor %}
+            <div class="related-items-wrapper">
+                <button type="button"
+                        class="related-scroll-arrow related-scroll-arrow-left hidden"
+                        aria-label="Scroll related items left">
+                    <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                </button>
+                <div class="related-items-scroll">
+                    {% for r in related_items %}
+                    <a href="{{ url_for('product_detail', item_id=r.id) }}" class="related-item-card">
+                        <div class="related-item-image-wrapper">
+                            {% if r.image_url %}
+                            <img src="{{ r.image_url }}"
+                                 alt="{{ r.name }}"
+                                 class="related-item-image img-responsive">
+                            {% endif %}
+                        </div>
+                        <div class="related-item-name">
+                            {{ r.name }}
+                        </div>
+                        {% set r_has_discount = (r.original_price is not none) and (r.original_price > r.price) %}
+                        <div class="related-item-price">
+                            {% if r_has_discount %}
+                                <span class="related-price-original">
+                                    ${{ "%.2f"|format(r.original_price) }}
+                                </span>
+                                <span class="related-price-discount">
+                                    ${{ "%.2f"|format(r.price) }}
+                                </span>
+                            {% else %}
+                                ${{ "%.2f"|format(r.price) }}
+                            {% endif %}
+                        </div>
+                        <div class="related-item-status">
+                            <span class="status-badge
+                                         {% if r.id|string in cart_item_ids %}status-in-cart
+                                         {% elif r.status == 'available' %}status-available
+                                         {% elif r.status == 'pending' %}status-pending
+                                         {% else %}status-sold{% endif %}">
+                                {% if r.id|string in cart_item_ids %}
+                                    IN YOUR CART
+                                {% else %}
+                                    {{ r.status|capitalize }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                <button type="button"
+                        class="related-scroll-arrow related-scroll-arrow-right hidden"
+                        aria-label="Scroll related items right">
+                    <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                </button>
             </div>
         </div>
         {% endif %}
@@ -114,6 +199,104 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+      // Handle like toggling via AJAX so we don't re-load the page and
+      // accidentally increment the view counter again.
+      (function() {
+        if (typeof window.jQuery === "undefined") {
+          return;
+        }
+        jQuery(function($) {
+          // Like toggle handling
+          $(".product-page .like-form").on("submit", function (evt) {
+            evt.preventDefault();
+            var $form = $(this);
+            var url = $form.attr("action");
+            $.ajax({
+              url: url,
+              method: "POST",
+              headers: { "X-Requested-With": "XMLHttpRequest" },
+              success: function (data) {
+                if (data && typeof data.likes !== "undefined") {
+                  $form.find(".like-count").text(data.likes);
+                }
+                if (data && typeof data.popularity !== "undefined") {
+                  $(".product-page .popularity-value").text(data.popularity);
+                }
+              }
+            });
+          });
+
+          // Related items horizontal scroll arrows
+          $(".related-items-wrapper").each(function () {
+            var $wrapper = $(this);
+            var $scroll = $wrapper.find(".related-items-scroll");
+            var $left = $wrapper.find(".related-scroll-arrow-left");
+            var $right = $wrapper.find(".related-scroll-arrow-right");
+
+            if (!$scroll.length) {
+              return;
+            }
+
+            function updateArrows() {
+              var el = $scroll[0];
+              if (!el) return;
+
+              var scrollWidth = el.scrollWidth;
+              var clientWidth = el.clientWidth;
+              var scrollLeft = el.scrollLeft;
+
+              // If no overflow, hide both arrows
+              if (scrollWidth <= clientWidth + 1) {
+                $left.addClass("hidden");
+                $right.addClass("hidden");
+                return;
+              }
+
+              // Show/hide based on current scroll position
+              if (scrollLeft <= 0) {
+                $left.addClass("hidden");
+              } else {
+                $left.removeClass("hidden");
+              }
+
+              if (scrollLeft + clientWidth >= scrollWidth - 1) {
+                $right.addClass("hidden");
+              } else {
+                $right.removeClass("hidden");
+              }
+            }
+
+            var scrollAmount = 220;
+
+            $left.on("click", function (evt) {
+              evt.preventDefault();
+              $scroll.animate(
+                { scrollLeft: $scroll.scrollLeft() - scrollAmount },
+                200,
+                updateArrows
+              );
+            });
+
+            $right.on("click", function (evt) {
+              evt.preventDefault();
+              $scroll.animate(
+                { scrollLeft: $scroll.scrollLeft() + scrollAmount },
+                200,
+                updateArrows
+              );
+            });
+
+            $scroll.on("scroll", updateArrows);
+            $(window).on("resize", updateArrows);
+
+            // Initial state
+            updateArrows();
+          });
+        });
+      })();
+    </script>
+    {% include 'footer.html' %}
 </body>
 </html>
 

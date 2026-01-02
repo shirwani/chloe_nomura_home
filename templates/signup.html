@@ -41,16 +41,21 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" class="form-control" id="email" name="email"
-                           value="{{ request.form.get('email', '') }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="phone">Phone (optional)</label>
-                    <input type="text" class="form-control" id="phone" name="phone"
-                           value="{{ request.form.get('phone', '') }}">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   value="{{ request.form.get('email', '') }}" required>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label for="phone">Phone (optional)</label>
+                            <input type="text" class="form-control" id="phone" name="phone"
+                                   value="{{ request.form.get('phone', '') }}">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="row">
@@ -73,7 +78,7 @@
 
                 <div class="form-group" style="margin-top: 15px;">
                     <button type="submit" name="action" value="signup" class="btn btn-primary">
-                        Sign Up
+                        <span class="glyphicon glyphicon-user"></span> Sign Up
                     </button>
                     <button type="submit"
                             name="action"
@@ -81,7 +86,7 @@
                             class="btn btn-default"
                             style="margin-left: 10px;"
                             formnovalidate>
-                        Continue as Guest
+                        Continue as Guest <span class="glyphicon glyphicon-arrow-right"></span>
                     </button>
                 </div>
             </form>
@@ -90,6 +95,7 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    {% include 'footer.html' %}
 </body>
 </html>
 

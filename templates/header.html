@@ -1,63 +1,12 @@
 <div class="logo">
-    <img class="logo-icon" src="https://chloe-nomura-home.atl1.cdn.digitaloceanspaces.com/website-images/chloe_nomura_icon.jpg" alt="Chloe profile image"/>
-    <span class="logo-text">Chloe Nomura Home Furnishing</span>
+    <a href="{{ url_for('home') }}" class="logo-link">
+        <img class="logo-icon" src="https://chloe-nomura-home.atl1.cdn.digitaloceanspaces.com/website-images/chloe_nomura_icon.jpg" alt="Chloe profile image"/>
+        <span class="logo-text">Chloe Nomura Home Furnishing</span>
+    </a>
 </div>
 <div class="top-nav">
     <div class="container top-nav-inner">
         <div class="top-nav-left">
-            {% set selected_categories = request.args.getlist('category') %}
-            <div class="dropdown">
-                {% if request.endpoint == 'get_inventory' %}
-                <button type="button"
-                        class="btn btn-link nav-hamburger dropdown-toggle"
-                        id="categoryFilterMenu"
-                        data-toggle="dropdown"
-                        aria-haspopup="true"
-                        aria-expanded="false">
-                    <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>
-                </button>
-                <div class="dropdown-menu category-filter-menu" aria-labelledby="categoryFilterMenu">
-                    <form method="get" action="{{ url_for('get_inventory') }}" style="padding: 10px; min-width: 220px;">
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" name="category" value="Bedroom"
-                                       {% if 'Bedroom' in selected_categories %}checked{% endif %}>
-                                Bedroom
-                            </label>
-                        </div>
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" name="category" value="Living Room"
-                                       {% if 'Living Room' in selected_categories %}checked{% endif %}>
-                                Living Room
-                            </label>
-                        </div>
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" name="category" value="Study"
-                                       {% if 'Study' in selected_categories %}checked{% endif %}>
-                                Study
-                            </label>
-                        </div>
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" name="category" value="Other"
-                                       {% if 'Other' in selected_categories %}checked{% endif %}>
-                                Other
-                            </label>
-                        </div>
-                        <hr style="margin: 8px 0;">
-                        <input type="hidden" name="q" value="{{ request.args.get('q', '') }}">
-                        <button type="submit" class="btn btn-primary btn-block btn-sm">Apply Filter</button>
-                        <a href="{{ url_for('get_inventory') }}" class="btn btn-link btn-block btn-sm">Clear</a>
-                    </form>
-                </div>
-                {% else %}
-                <button type="button" class="btn btn-link nav-hamburger">
-                    <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>
-                </button>
-                {% endif %}
-            </div>
             {% if request.endpoint == 'home' %}
             <span class="btn btn-link nav-link-disabled" aria-current="page">Home</span>
             {% else %}
@@ -67,6 +16,11 @@
             <span class="btn btn-link nav-link-disabled" aria-current="page">Inventory</span>
             {% else %}
             <a href="{{ url_for('get_inventory') }}" class="btn btn-link">Inventory</a>
+            {% endif %}
+            {% if request.endpoint == 'about' %}
+            <span class="btn btn-link nav-link-disabled" aria-current="page">About</span>
+            {% else %}
+            <a href="{{ url_for('about') }}" class="btn btn-link">About</a>
             {% endif %}
             {% if request.endpoint == 'contact' %}
             <span class="btn btn-link nav-link-disabled" aria-current="page">Contact</span>
@@ -89,33 +43,55 @@
             </form>
         </div>
         <div class="top-nav-right">
+            {% if not user_is_guest %}
             <a href="{{ url_for('view_cart') }}" class="btn btn-link nav-cart">
                 <span class="glyphicon glyphicon-shopping-cart" aria-hidden="true"></span>
                 {% if cart_count %}
                 <span class="cart-count">{{ cart_count }}</span>
                 {% endif %}
             </a>
+            {% endif %}
             {% if user_first_name %}
-                {% if user_is_admin %}
-                <a href="{{ url_for('admin_users') }}" class="btn btn-link">Admin</a>
-                {% endif %}
-                <a href="{{ url_for('profile') }}" class="btn btn-link">
-                    <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
-                </a>
-                <a href="{{ url_for('logout') }}" class="btn btn-link">Logout</a>
+                <div class="btn-group nav-user-menu">
+                    <button type="button"
+                            class="btn btn-link dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false">
+                        <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-right">
+                        <li>
+                            <a href="{{ url_for('profile') }}">View Profile</a>
+                        </li>
+                        {% if user_is_admin %}
+                        <li>
+                            <a href="{{ url_for('admin_users') }}">Admin</a>
+                        </li>
+                        {% endif %}
+                        <li role="separator" class="divider"></li>
+                        <li>
+                            <a href="{{ url_for('logout') }}">Logout</a>
+                        </li>
+                    </ul>
+                </div>
             {% elif user_is_guest %}
-            <a href="{{ url_for('login', next=request.path) }}" class="btn btn-link">Login</a>
+            <a href="{{ url_for('login_overlay', next=request.full_path or request.path) }}" class="btn btn-link"><span class="glyphicon glyphicon-log-in"></span> Login</a>
             {% endif %}
         </div>
     </div>
 </div>
-{# Show the inline login dialog only for anonymous users and
-   not on the dedicated auth pages (login/signup/forgot/reset). #}
-{% if not user_roles and request.endpoint not in ['login', 'signup', 'forgot_password', 'forgot_password_send_link', 'reset_password'] %}
+{# Show the inline login dialog for anonymous users or when explicitly forced.
+   On dedicated auth pages (login/signup/forgot/reset), only show it when
+   force_login_overlay is True so that the navbar Login link can still open
+   the dialog from those pages (e.g., from the signup page for guests). #}
+{% set _auth_endpoints = ['login', 'signup', 'forgot_password', 'forgot_password_send_link', 'reset_password'] %}
+{% if (not user_roles or force_login_overlay) and (force_login_overlay or request.endpoint not in _auth_endpoints) %}
 <div class="login-overlay">
     <div class="login-modal">
         <h3 class="login-title">Welcome to Chloe Nomura Home</h3>
-        <p class="login-subtitle">Please log in, sign up, or continue as guest to browse and shop.</p>
+        <p class="login-subtitle">Please log in, sign up, or continue as guest. Guests can browse, but cannot purchase items.</p>
         {% if login_error %}
         <div class="alert alert-danger">
             {{ login_error }}
@@ -142,10 +118,10 @@
                 </div>
                 <div class="login-actions">
                     <button type="submit" name="action" value="login" class="btn btn-primary">
-                        Login
+                        <span class="glyphicon glyphicon-log-in"></span> Login
                     </button>
                     <a href="{{ url_for('signup') }}" class="btn btn-default">
-                        Sign Up
+                        <span class="glyphicon glyphicon-user"></span> Sign Up
                     </a>
                     <button type="submit"
                             name="action"

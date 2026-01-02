@@ -13,10 +13,16 @@
     <div class="container">
         <div class="product-card" style="margin-top: 30px;">
             <h1 class="product-title">Thank You!</h1>
-            <p>Your payment has been recorded and the selected item(s) have been marked as <strong>Pending</strong> (on hold for pickup).</p>
+            <p>Your payment has been received.</p>
+
+            {% if last_sale %}
+            <p><strong>Payment Amount:</strong> ${{ "%.2f"|format(last_sale.total) }}</p>
+            <p><strong>Order ID:</strong> {{ last_sale.sale_id }}</p>
+            {% endif %}
+
             <p>
                 We will hold your piece for local pickup as agreed. If you have any questions about pickup
-                timing or logistics, please reach out directly via your payment channel (Venmo or PayPal).
+                timing or logistics, please reach out directly with your receipt.
             </p>
             <a href="{{ url_for('get_inventory') }}" class="btn btn-primary">
                 Back to Inventory

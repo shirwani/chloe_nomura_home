@@ -14,16 +14,27 @@
         <div class="product-header">
             {% if item.id %}
             <a href="{{ url_for('product_detail', item_id=item.id) }}" class="btn btn-default">
-                &larr; Back to Details
+                <span class="glyphicon glyphicon-arrow-left"></span> Back to Details
             </a>
+            {% if user_is_admin %}
+            <form method="post"
+                  action="{{ url_for('delete_product', item_id=item.id) }}"
+                  style="display:inline; margin-left: 8px;"
+                  onsubmit="return confirm('Are you sure you want to permanently delete this listing? This cannot be undone.');">
+                <button type="submit" class="btn btn-danger">
+                    <span class="glyphicon glyphicon-trash"></span> Delete Listing
+                </button>
+            </form>
+            {% endif %}
             {% else %}
             <a href="{{ url_for('get_inventory') }}" class="btn btn-default">
-                &larr; Back to Inventory
+                <span class="glyphicon glyphicon-arrow-left"></span> Back to Inventory
             </a>
             {% endif %}
         </div>
 
         <div class="row product-row">
+            {% if item.id %}
             <div class="col-sm-6">
                 <div class="product-image-wrapper">
                     <img src="{{ item.image_url }}"
@@ -31,6 +42,7 @@
                          class="product-image img-responsive">
                 </div>
             </div>
+            {% endif %}
             <div class="col-sm-6">
                 <div class="product-card">
                     <h1 class="product-title">
@@ -43,9 +55,21 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="price">Price (USD)</label>
+                            <label for="price">Current Price (USD)</label>
                             <input type="number" step="0.01" class="form-control" id="price" name="price"
                                    value="{{ '%.2f'|format(item.price) }}" required>
+                            <p class="help-block">
+                                This is the price customers will pay (the discounted price, if on sale).
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="original_price">Original Price (optional)</label>
+                            <input type="number" step="0.01" class="form-control" id="original_price" name="original_price"
+                                   value="{% if item.original_price is not none %}{{ '%.2f'|format(item.original_price) }}{% endif %}">
+                            <p class="help-block">
+                                If this item is on sale, enter the original higher price here.
+                            </p>
                         </div>
 
                         <div class="form-group">
@@ -74,16 +98,39 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="category">Category</label>
+                            <select class="form-control" id="category" name="category">
+                                {% for cat in categories_for_select %}
+                                <option value="{{ cat }}" {% if item.category == cat %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="help-block">
+                                Used for inventory filters and related items on the site.
+                            </p>
+                        </div>
+
+                        <div class="form-group">
                             <label for="description">Description</label>
                             <textarea class="form-control" id="description" name="description" rows="6" required>{{ item.description|trim }}</textarea>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="glyphicon glyphicon-floppy-disk"></span> Save Changes
+                        </button>
+                        {% if item.id %}
+                        <a href="{{ url_for('product_detail', item_id=item.id) }}"
+                           class="btn btn-default"
+                           style="margin-left: 8px;">
+                           <span class="glyphicon glyphicon-remove-circle"></span> Discard Changes
+                        </a>
+                        {% endif %}
                     </form>
                 </div>
             </div>
         </div>
     </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     {% include 'footer.html' %}
 </body>
 </html>

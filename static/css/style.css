@@ -1,3 +1,33 @@
+/* Global typography: modern sans-serif stack commonly used in ecommerce */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #333333;
+}
+
+/* Global link styling: classic, slightly darker blue; underline only on hover/focus */
+a {
+  color: #195a8a; /* darker, richer blue */
+  text-decoration: none;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+a:visited {
+  color: #15486c;
+}
+
+a:hover,
+a:focus {
+  color: #123854;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Do not underline disabled nav links on hover/focus */
+.nav-link-disabled:hover,
+.nav-link-disabled:focus {
+  text-decoration: none;
+}
+
 .logo-icon {
   width: 100px;
   height: auto;
@@ -12,24 +42,98 @@
   width: 100%;
 }
 
+.logo-link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo-link:hover,
+.logo-link:focus {
+  text-decoration: none;
+  color: inherit;
+}
+
 .logo-text {
   margin-left: 10px;
-  font-family: "Georgia", "Times New Roman", serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 20px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #333333;
+  color: #17352a;
 }
 img {
   border-radius: 20px;
 }
 
-.home-page {
+.home-page,
+.about-page,
+.inventory-page {
   padding-bottom: 40px;
 }
 
-.inventory-page {
-  padding-bottom: 40px;
+/* Home page hero image */
+.home-hero-image {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 5px;
+}
+
+/* Home page hero CTA buttons (Popular / Discounted) */
+.home-hero-cta-table {
+  border-collapse: collapse;
+  border-spacing: 0;   /* remove any row spacing between the two buttons */
+}
+
+.home-hero-cta-table .btn-default {
+  display: inline-block;
+  width: 170px;        /* fixed width so both buttons match */
+  text-align: left;
+  margin-top: 0;       /* no vertical gap */
+  margin-bottom: 0;
+}
+
+.home-hero-heading {
+  font-family: "Playfair Display", "Times New Roman", serif;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #17352a;
+  padding: 10px 16px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+/* Home page sustainability blurb */
+.home-sustainability-blurb {
+  margin-top: 16px;
+  padding: 28px 30px;
+  background: linear-gradient(to bottom, #f8faf9, #eef3f0);
+  border-radius: 6px;
+  border: 1px solid #dde4df;
+  text-align: center;
+}
+
+.home-sustainability-title {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 22px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #17352a;
+}
+
+.home-sustainability-text {
+  margin-bottom: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #39463f;
 }
 
 .inventory-header {
@@ -37,6 +141,158 @@ img {
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 20px;
+}
+
+.inventory-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.inventory-filters {
+  flex: 0 0 240px;
+  max-width: 260px;
+  /* crisp, light stone gradient that pairs with the gold navbar */
+  background: #f7fafc; /* fallback */
+  background: linear-gradient(to bottom, #fdfefe, #edf1f5);
+  padding: 16px 18px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+  position: sticky;
+  top: 80px; /* stay below the top nav bar while scrolling */
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.inventory-filters-title {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #17352a;
+}
+
+.inventory-filters-section {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.inventory-filters-section-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.inventory-filters-actions {
+  margin-top: 10px;
+}
+
+.inventory-filters-actions .btn-link {
+  font-size: 14px;
+}
+
+/* Make the Clear button blend with the filter background */
+.inventory-filters-actions .btn-default {
+  background-color: #edf3f8;
+  border-color: #c4d0dd;
+  background-image: linear-gradient(to bottom, #f4f8fc, #dde5f0);
+  color: #17352a;
+}
+
+.inventory-filters-actions .btn-default:hover,
+.inventory-filters-actions .btn-default:focus {
+  background-color: #e4edf5;
+  border-color: #bcc9d8;
+  background-image: linear-gradient(to bottom, #edf3f9, #d4deeb);
+  color: #17352a;
+}
+
+.inventory-price-filter {
+  display: flex;
+  gap: 8px;
+}
+
+.inventory-price-filter .form-group {
+  flex: 1 1 0;
+}
+
+.inventory-price-label {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.inventory-price-input {
+  width: 100%;
+}
+
+.admin-user-hidden-submit {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.admin-user-row-updated-active {
+  animation: adminRowPulse 5s ease-out forwards;
+}
+
+@keyframes adminRowPulse {
+  0% {
+    background-color: yellow; /* bright, warm yellow highlight */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.inventory-image-carousel {
+  position: relative;
+}
+
+.inventory-image-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  color: #17352a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.inventory-image-arrow-left {
+  left: 6px;
+}
+
+.inventory-image-arrow-right {
+  right: 6px;
+}
+
+.inventory-image-arrow .glyphicon {
+  font-size: 12px;
+}
+
+.inventory-image-carousel:hover .inventory-image-arrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.inventory-main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .inventory-header h1 {
@@ -47,6 +303,20 @@ img {
 .inventory-meta {
   color: #777;
   font-size: 13px;
+}
+
+@media (max-width: 767px) {
+  .inventory-layout {
+    flex-direction: column;
+  }
+
+  .inventory-filters {
+    width: 100%;
+    max-width: none;
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 .inventory-table {
@@ -83,7 +353,9 @@ img {
   box-shadow: none; /* 0 1px 3px rgba(137, 5, 5, 0.04); */
   text-align: left;
   align-items: left;
-  background-color: #f5f5f5; /* very light silver for each cell */
+  /* subtle, crisp light stone gradient for each item card */
+  background: #f7fafc; /* fallback */
+  background: linear-gradient(to bottom, #fdfefe, #edf1f5);
   border-radius: 10px;       /* rounded corners for each cell */
   overflow: hidden;          /* ensure contents respect the rounding */
 }
@@ -94,6 +366,50 @@ img {
 
 .inventory-table tbody tr td:last-child {
   border: none;
+}
+
+/* Inventory pagination styled to match gold + deep green palette */
+.inventory-page .pagination {
+  margin-top: 20px;
+}
+
+.inventory-page .pagination > li > a,
+.inventory-page .pagination > li > span {
+  color: #17352a;
+  background-color: #f6f0e2;
+  border-color: #d6c7a5;
+}
+
+.inventory-page .pagination > li > a:hover,
+.inventory-page .pagination > li > a:focus,
+.inventory-page .pagination > li > span:hover,
+.inventory-page .pagination > li > span:focus {
+  color: #17352a;
+  background-color: #e8dbc1;
+  border-color: #c4b089;
+}
+
+.inventory-page .pagination > .active > a,
+.inventory-page .pagination > .active > span,
+.inventory-page .pagination > .active > a:hover,
+.inventory-page .pagination > .active > span:hover,
+.inventory-page .pagination > .active > a:focus,
+.inventory-page .pagination > .active > span:focus {
+  color: #ffffff;
+  background-color: #17352a;
+  border-color: #12291f;
+}
+
+.inventory-page .pagination > .disabled > span,
+.inventory-page .pagination > .disabled > span:hover,
+.inventory-page .pagination > .disabled > span:focus,
+.inventory-page .pagination > .disabled > a,
+.inventory-page .pagination > .disabled > a:hover,
+.inventory-page .pagination > .disabled > a:focus {
+  color: #aaaaaa;
+  background-color: #f0f0f0;
+  border-color: #dddddd;
+  text-decoration: none; /* prevent underline on hover/focus for disabled links */
 }
 
 /* Cart page table: remove cell borders and shadow */
@@ -108,14 +424,42 @@ img {
   margin: 0 auto;
 }
 
+/* Empty cart alert: match warm neutral + gold-tinted palette */
+.cart-empty-alert {
+  background-color: #f6f0e2;  /* same family as .btn-default */
+  border-color: #d6c7a5;
+  color: #3b2d17;
+}
+
+/* Make success alerts (e.g., profile/contact updates) match the
+   same warm neutral + gold-tinted palette used for cart alerts. */
+.alert-success {
+  background-color: #f6f0e2;
+  border-color: #d6c7a5;
+  color: #3b2d17;
+}
+
+/* Profile page success alert: make this one stand out in bright yellow
+   while still using a dark, readable text color. */
+.profile-success-alert {
+  background-color: yellow;  /* bright, warm yellow */
+  border-color: rgb(228, 228, 9);
+  color: #000000;
+}
+
 .inventory-card {
-  width: 20%;
-  max-width: 20%;
+  width: 25%;
+  max-width: 25%;
   vertical-align: top;
   text-align: left;
   justify-content: left;
   align-items: left;
   justify-items: left;
+  position: relative; /* so fire icon can anchor to bottom-right of cell */
+}
+
+.inventory-image-link {
+  display: block;
 }
 
 .inventory-price-line {
@@ -134,13 +478,32 @@ img {
 
 .inventory-price {
   font-weight: 600;
-  color: #2c7a3f;
+  /* use deep forest green to match primary button/nav accent */
+  color: #17352a;
+}
+
+.inventory-price-original {
+  font-weight: 400;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 6px;
+}
+
+.inventory-price-discount {
+  font-weight: 700;
+  /* rich wine tone that pairs well with gold + deep green */
+  color: #8b1f2d;
+}
+
+.inventory-metrics {
+  font-size: 12px;
+  margin-top: 2px;
 }
 
 .status-badge {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 4px;
   font-size: 11px;
   text-transform: uppercase;
 }
@@ -172,6 +535,39 @@ img {
   border-radius: 8px;
   display: block;
   margin: 0;          /* left-justify inside the cell */
+}
+
+/* "HOT" badge overlay on top of certificate icon */
+.inventory-hot-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  display: inline-block;
+  z-index: 2;
+}
+
+.inventory-hot-badge .glyphicon-certificate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #d32f2f;       /* red badge color */
+  font-size: 36px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+.inventory-hot-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  z-index: 3;
 }
 
 .cart-thumbnail {
@@ -271,12 +667,50 @@ img {
 .product-price {
   font-size: 24px;
   font-weight: 600;
-  color: #2c7a3f;
+  /* match inventory regular price color (deep forest green) */
+  color: #17352a;
   margin-bottom: 8px;
+}
+
+.product-price-original {
+  font-size: 18px;
+  font-weight: 400;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 8px;
+}
+
+.product-price-discount {
+  /* match inventory discount price color (rich wine) */
+  color: #8b1f2d;
+  font-weight: 700;
 }
 
 .product-status {
   margin-bottom: 12px;
+}
+
+.like-form.inline-like-form {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.like-button {
+  padding: 0 4px;
+  border: none;
+}
+
+.inline-like-form .glyphicon-heart-empty {
+  color: #d32f2f; /* red heart */
+}
+
+.like-count {
+  vertical-align: middle;
+  font-size: 11px;
+  color: #777;
+  margin-left: 2px;
 }
 
 .product-description {
@@ -294,6 +728,10 @@ img {
   margin-top: 32px;
 }
 
+.related-items-wrapper {
+  position: relative;
+}
+
 .related-items-title {
   font-size: 18px;
   margin-bottom: 12px;
@@ -303,18 +741,46 @@ img {
   display: flex;
   gap: 16px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding: 8px 28px 8px; /* extra side padding so arrows don't cover content */
 }
 
 .related-item-card {
   flex: 0 0 160px;
   display: block;
-  background: #ffffff;
-  border-radius: 6px;
+  /* Match inventory + filter card crisp light stone gradient */
+  background: #f7fafc; /* fallback */
+  background: linear-gradient(to bottom, #fdfefe, #edf1f5);
+  border-radius: 10px;
   padding: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   text-decoration: none;
   color: inherit;
+}
+
+.related-scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  color: #17352a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.related-scroll-arrow-left {
+  left: 4px;
+}
+
+.related-scroll-arrow-right {
+  right: 4px;
 }
 
 .related-item-image-wrapper {
@@ -339,14 +805,124 @@ img {
 .related-item-price {
   font-size: 13px;
   font-weight: 600;
-  color: #2c7a3f;
+  /* match main price color */
+  color: #17352a;
+}
+
+.related-price-original {
+  font-weight: 400;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 4px;
+}
+
+.related-price-discount {
+  font-weight: 600;
+  /* match discount price color */
+  color: #8b1f2d;
+}
+
+/* Home page "Our Top Picks" and category grid */
+.home-top-picks-container {
+  margin-top: 10px;
+  margin-bottom: 30px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.home-top-picks-heading {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+  font-size: 22px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #17352a;
+  text-align: center;
+}
+
+.home-top-picks-likes {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #7b8a83;
+}
+
+.home-top-picks-description {
+  margin-top: 4px;
+}
+
+.home-category-container {
+  margin-top: 10px;
+  margin-bottom: 40px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.home-category-heading {
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+  font-size: 22px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #17352a;
+  text-align: center;
+}
+
+.home-category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  /* Spread category cards across the full width with larger gaps between them */
+  justify-content: space-between;
+  column-gap: 32px;
+  row-gap: 24px;
+}
+
+.home-category-card {
+  display: block;
+  /* Allow cards to grow/shrink while keeping 3–4 per row on large screens */
+  flex: 1 1 22%;
+  max-width: 240px;
+  min-width: 180px;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.home-category-image-wrapper {
+  background: #f7f7f9;
+  border-radius: 50px;
+  padding: 0;
+  margin-bottom: 6px;
+  overflow: hidden; /* ensure the image corners follow the rounded wrapper */
+}
+
+.home-category-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.home-category-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #17352a;
+}
+
+.home-category-card:hover .home-category-name,
+.home-category-card:focus .home-category-name {
+  color: #245a3a;
+  text-decoration: none;
 }
 
 /* Top navigation bar */
 .top-nav {
-  background: #006d77; /* peacock blue */
-  border-bottom: 1px solid #004f57;
-  padding: 8px 0;
+  /* richer, more luxurious ancient-gold vertical gradient */
+  background: #e2c96e; /* fallback */
+  background: linear-gradient(to bottom, #f3e3a0, #c89a3a);
+  border-bottom: 1px solid #9b6b1f;
+  padding: 4px 0; /* slightly tighter to reduce navbar height */
   margin-bottom: 20px;
 }
 
@@ -354,6 +930,7 @@ img {
   display: flex;
   justify-content: flex-start;
   align-items: center;
+  position: relative; /* allow the user dropdown to align to full container width */
 }
 
 .top-nav-left {
@@ -365,33 +942,36 @@ img {
 .top-nav-right {
   text-align: left;
   margin-left: auto; /* push cart icon all the way to the right */
+  display: flex;
+  align-items: center;
 }
 
 .top-nav-left a,
 .top-nav-right a {
   margin-right: 15px;
-  font-weight: 500;
-  color: #ffffff !important;
+  font-weight: normal;
+  color: #17352a !important; /* deep forest green for luxurious contrast on gold */
 }
 
 .top-nav-left .nav-link-disabled,
 .top-nav-right .nav-link-disabled {
   margin-right: 15px;
-  font-weight: 500;
-  color: #ffffff;
+  font-weight: normal;
+  color: #274538;
   opacity: 0.7;
   cursor: default;
 }
 
 .nav-hamburger {
   margin-right: 10px;
-  color: #ffffff;
+  color: #17352a;
   padding: 4px 8px;
 }
 
 .nav-hamburger .glyphicon {
-  color: #ffffff;
-  font-size: 18px;
+  color: #17352a;
+  /* slightly smaller so the lines appear finer */
+  font-size: 15px;
 }
 
 .top-nav-search {
@@ -407,9 +987,11 @@ img {
 }
 
 .top-nav-search .btn-default {
-  background-color: transparent;
+  /* keep navbar search icon button visually invisible over the nav background */
+  background: none;
+  background-image: none;
   border-color: transparent;
-  color: #ffffff;
+  color: #17352a;
   box-shadow: none;
 }
 
@@ -420,7 +1002,7 @@ img {
 
 .top-nav-right .nav-cart .glyphicon {
   margin-right: 0;
-  color: #ffffff;
+  color: #17352a;
   font-size: 22px;
 }
 
@@ -440,9 +1022,66 @@ img {
 }
 
 .nav-user {
+  text-align: right;
   margin-left: 10px;
   font-weight: 500;
-  color: #ffffff;
+  color: #17352a;
+}
+
+/* Keep user icon dropdown button visually consistent with other nav items */
+.nav-user-menu {
+  position: static; /* let the dropdown position relative to the full .top-nav-inner container */
+}
+
+.nav-user-menu .btn-link {
+  color: #17352a;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.nav-user-menu .btn-link:hover,
+.nav-user-menu .btn-link:focus {
+  color: #17352a;
+  text-decoration: none;
+}
+
+.nav-user-menu .glyphicon {
+  color: #17352a;
+}
+
+/* Make the user profile dropdown take 25% of the top-level container width, aligned to the right,
+   with an even lighter complementary soft gradient background */
+.nav-user-menu .dropdown-menu {
+  left: auto;
+  right: 0;
+  width: 15%;
+  min-width: 50px;
+  box-sizing: border-box;
+  background: #fffdf7; /* fallback */
+  background: linear-gradient(to bottom, #fffdf7, #f8edd9);
+  border: 1px solid #f3ecde; /* softer, lighter border around dropdown */
+}
+
+/* Hide the divider in the dropdown menu */
+.nav-user-menu .dropdown-menu .divider {
+  display: none;
+}
+
+/* Align the individual dropdown menu items to the right and match navbar font */
+.nav-user-menu .dropdown-menu > li > a {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #17352a;
+  font-size: 12px;
+  text-align: right;
+}
+
+/* Dropdown items: no background highlight on hover, but underline to indicate hover */
+.nav-user-menu .dropdown-menu > li > a:hover,
+.nav-user-menu .dropdown-menu > li > a:focus {
+  background-color: transparent !important;
+  color: #17352a;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .logo-bar {
@@ -510,4 +1149,227 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.left {
+  text-align: left;
+}
+
+.right {
+  text-align: right;
+}
+
+.center {
+  text-align: center;
+}
+
+.footer {
+  font-size: 13px;
+  font-style: italic;
+  /* warm neutral gradient that complements the gold navbar */
+  background: #f4ecdd; /* fallback */
+  background: linear-gradient(to top, #e8dbc1, #fdf7ea);
+  opacity: 0.8;
+  padding-right: 20px;
+  padding-top: 20px;
+  padding-bottom: 10px;
+} 
+
+.footer-topic {
+  color: #17352a;
+  font-weight: bold;
+}
+
+.black {
+  color: #000000;
+}
+
+.footer-copyright {
+  color: #17352a;
+  font-weight: bold;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.footer-table {
+  width: 100%;
+}
+
+.footer-table td {
+  text-align: left;
+  vertical-align: top;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.footer-social-links {
+  margin-top: 4px;
+}
+
+.footer-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 8px;
+  border-radius: 50%;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: bold;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Keep footer social icons white even after visit */
+.footer-social-link:link,
+.footer-social-link:visited {
+  color: #ffffff;
+}
+
+.footer-social-link:last-child {
+  margin-right: 0;
+}
+
+.footer-social-link-facebook {
+  background-color: #1877f2;
+  color: #ffffff;
+}
+
+.footer-social-link-facebook::before {
+  content: "f";
+}
+
+.footer-social-link-instagram {
+  background: radial-gradient(circle at 30% 30%, #fdf497 0, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 100%);
+}
+
+.footer-social-link-instagram::before {
+  content: "⧉";
+}
+
+.footer-social-link-x {
+  background-color: #000000;
+}
+
+.footer-social-link-x::before {
+  content: "X";
+}
+
+.footer hr {
+  /* match navbar border color for cohesive theme */
+  border-top: 1px solid #9b6b1f;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.footer-payment-method-logo {
+  width: 60px;
+  height: auto;
+}
+
+
+
+/* -------------------------
+   Global button palette
+   (site-wide, complements gold + deep green theme;
+    navbar buttons keep their own styles)
+-------------------------- */
+.btn {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Primary/semantic actions: use the same palette as .btn-default site-wide
+   (navbar buttons use .btn-link and keep their own styles). */
+.btn-primary,
+.btn-success,
+.btn-info,
+.btn-warning,
+.btn-danger {
+  background-color: #f6f0e2;
+  border-color: #d6c7a5;
+  background-image: linear-gradient(to bottom, #fff9ec, #e3d2af);
+  color: #4d3b1f;
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-info:hover,
+.btn-warning:hover,
+.btn-danger:hover,
+.btn-primary:focus,
+.btn-success:focus,
+.btn-info:focus,
+.btn-warning:focus,
+.btn-danger:focus {
+  background-color: #e8dbc1;
+  border-color: #c4b089;
+  background-image: linear-gradient(to bottom, #f5e8cb, #d4c094);
+  color: #3b2d17;
+}
+
+/* Secondary / neutral actions: warm light neutral with subtle gold tint */
+.btn-default {
+  background-color: #f6f0e2;
+  border-color: #d6c7a5;
+  background-image: linear-gradient(to bottom, #fff9ec, #e3d2af);
+  color: #4d3b1f;
+}
+
+.btn-default:hover,
+.btn-default:focus {
+  background-color: #e8dbc1;
+  border-color: #c4b089;
+  background-image: linear-gradient(to bottom, #f5e8cb, #d4c094);
+  color: #3b2d17;
+}
+
+/* Ensure anchor-style default buttons (e.g., "Update Listing") never show blue link text */
+a.btn-default,
+a.btn-default:visited,
+a.btn-default:hover,
+a.btn-default:focus {
+  color: #3b2d17 !important;
+}
+
+/* Text-style buttons inherit the surrounding text color by default */
+.btn-link {
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+  color: #3b2d17;
+}
+
+/* Continue Shopping button: deep forest green to complement gold/nav palette */
+.btn-continue-shopping {
+  background-color: #245a3a;
+  border-color: #1b422a;
+  background-image: linear-gradient(to bottom, #2b6b44, #1f4a30);
+  color: #ffffff !important;
+}
+
+.btn-continue-shopping:hover,
+.btn-continue-shopping:focus {
+  background-color: #2f7a4a;
+  border-color: #215636;
+  background-image: linear-gradient(to bottom, #358653, #215636);
+  color: #ffffff !important;
+}
+
+.home-hero-container {
+  vertical-align: top;
+  background-color: #ffffff;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }

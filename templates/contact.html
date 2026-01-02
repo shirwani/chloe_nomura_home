@@ -12,7 +12,7 @@
 
     <div class="container">
         <div class="product-card" style="margin-top: 30px;">
-            <h1 class="product-title">Contact Chloe Nomura Home Furnishing</h1>
+            <h1 class="product-title">Contact Us</h1>
             <p class="product-description">
                 Have a question about a piece, styling advice, or a custom request? Send a note below and
                 we’ll get back to you as soon as possible.
@@ -32,13 +32,13 @@
                 <div class="form-group">
                     <label for="name">Your Name</label>
                     <input type="text" class="form-control" id="name" name="name"
-                           value="{{ request.form.get('name', '') }}" required>
+                           value="{{ request.form.get('name', contact_name or '') }}" required>
                 </div>
 
                 <div class="form-group">
                     <label for="email">Your Email</label>
                     <input type="email" class="form-control" id="email" name="email"
-                           value="{{ request.form.get('email', '') }}" required>
+                           value="{{ request.form.get('email', contact_email or '') }}" required>
                 </div>
 
                 <div class="form-group">
@@ -47,7 +47,7 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    Send Message
+                    <span class="glyphicon glyphicon-send"></span> Send Message
                 </button>
             </form>
         </div>
